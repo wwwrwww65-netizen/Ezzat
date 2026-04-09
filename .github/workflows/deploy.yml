@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["feat/arabic-dashboard-9783601137565293862"]
   workflow_dispatch:
 
 permissions:
