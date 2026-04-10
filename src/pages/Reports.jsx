@@ -12,6 +12,14 @@ const reportTypes = [
 ];
 
 export default function Reports() {
+  const handleDownload = (title) => {
+    alert(`جاري تجهيز ${title} وتحميله بصيغة PDF...`);
+    // Simulated delay
+    setTimeout(() => {
+      alert(`تم تحميل ${title} بنجاح.`);
+    }, 1500);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -35,7 +43,12 @@ export default function Reports() {
             </div>
             <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-50">
               <span className="text-xs font-medium text-gray-400">آخر تحديث: اليوم</span>
-              <Button variant="ghost" size="sm" className="text-primary-600">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-primary-600"
+                onClick={() => handleDownload(report.title)}
+              >
                 <Download className="w-4 h-4" />
                 تحميل PDF
               </Button>

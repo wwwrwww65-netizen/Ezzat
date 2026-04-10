@@ -27,6 +27,11 @@ export const DataProvider = ({ children }) => {
       employees: initialData.mockEmployees,
       invoices: initialData.mockInvoices,
       expenses: initialData.mockExpenses,
+      income: [
+        { id: 1, title: 'دفعة أولى - فيلا النرجس', method: 'تحويل بنكي', date: '2023-12-05', amount: '50,000 ر.س', status: 'مؤكد' },
+        { id: 2, title: 'مستخلص رقم 3 - برج الملك', method: 'شيك', date: '2023-12-04', amount: '120,000 ر.س', status: 'مؤكد' },
+        { id: 3, title: 'تجديد فندق الشاطئ', method: 'نقدًا', date: '2023-12-02', amount: '15,000 ر.س', status: 'قيد التحصيل' },
+      ],
       inventory: initialData.mockInventory,
       suppliers: initialData.mockSuppliers,
       activityLog: initialData.mockActivityLog,
