@@ -19,22 +19,31 @@ export default function Dashboard() {
   const calculateProfit = () => {
     const totalIncomeFromInv = (invoices || [])
       .filter(inv => inv.status === 'مدفوعة')
-      .reduce((acc, inv) => acc + (parseInt(inv.amount.replace(/[^0-9]/g, '')) || 0), 0);
+      .reduce((acc, inv) => {
+        const amount = typeof inv.amount === 'string' ? inv.amount : String(inv.amount || 0);
+        return acc + (parseInt(amount.replace(/[^0-9]/g, '')) || 0);
+      }, 0);
 
     const totalIncomeFromEntries = (income || [])
       .filter(inc => inc.status === 'مؤكد')
-      .reduce((acc, inc) => acc + (parseInt(inc.amount.replace(/[^0-9]/g, '')) || 0), 0);
+      .reduce((acc, inc) => {
+        const amount = typeof inc.amount === 'string' ? inc.amount : String(inc.amount || 0);
+        return acc + (parseInt(amount.replace(/[^0-9]/g, '')) || 0);
+      }, 0);
 
     const totalExpenses = (expenses || [])
-      .reduce((acc, exp) => acc + (parseInt(exp.amount.replace(/[^0-9]/g, '')) || 0), 0);
+      .reduce((acc, exp) => {
+        const amount = typeof exp.amount === 'string' ? exp.amount : String(exp.amount || 0);
+        return acc + (parseInt(amount.replace(/[^0-9]/g, '')) || 0);
+      }, 0);
 
     return (totalIncomeFromInv + totalIncomeFromEntries) - totalExpenses;
   };
 
   const stats = [
-    { label: 'إجمالي المشاريع', value: projects.length.toString(), trend: '+2', trendType: 'up', icon: Briefcase },
-    { label: 'المشاريع النشطة', value: projects.filter(p => p.status === 'نشط').length.toString(), trend: '0', trendType: 'neutral', icon: Briefcase },
-    { label: 'إجمالي العملاء', value: clients.length.toString(), trend: '+12', trendType: 'up', icon: Users },
+    { label: 'إجمالي المشاريع', value: (projects || []).length.toString(), trend: '+2', trendType: 'up', icon: Briefcase },
+    { label: 'المشاريع النشطة', value: (projects || []).filter(p => p.status === 'نشط').length.toString(), trend: '0', trendType: 'neutral', icon: Briefcase },
+    { label: 'إجمالي العملاء', value: (clients || []).length.toString(), trend: '+12', trendType: 'up', icon: Users },
     { label: 'صافي الربح', value: `${calculateProfit().toLocaleString()} ر.س`, trend: '+15%', trendType: 'up', icon: Wallet },
   ];
 
