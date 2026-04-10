@@ -27,6 +27,7 @@ export const DataProvider = ({ children }) => {
       employees: initialData.mockEmployees,
       invoices: initialData.mockInvoices,
       expenses: initialData.mockExpenses,
+      income: initialData.mockIncome || [],
       inventory: initialData.mockInventory,
       suppliers: initialData.mockSuppliers,
       activityLog: initialData.mockActivityLog,

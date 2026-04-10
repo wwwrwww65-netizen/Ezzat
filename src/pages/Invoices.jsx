@@ -99,7 +99,7 @@ export default function Invoices() {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
                 <div className="flex items-center gap-2">
-                  <button className="p-1.5 text-gray-500 hover:text-primary-600 rounded transition-colors" title="تحميل"><Download className="w-4 h-4" /></button>
+                  <button onClick={() => alert(`جاري تحميل الفاتورة ${inv.id}...`)} className="p-1.5 text-gray-500 hover:text-primary-600 rounded transition-colors" title="تحميل"><Download className="w-4 h-4" /></button>
                   <button onClick={() => handleDelete(inv)} className="p-1.5 text-gray-500 hover:text-red-600 rounded transition-colors" title="حذف"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </td>

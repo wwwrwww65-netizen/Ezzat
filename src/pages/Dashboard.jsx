@@ -14,15 +14,21 @@ const chartData = [
 ];
 
 export default function Dashboard() {
-  const { projects, clients, invoices, expenses } = useData();
+  const { projects, clients, invoices, expenses, income } = useData();
 
   const calculateProfit = () => {
-    const totalIncome = invoices
+    const totalIncomeFromInv = (invoices || [])
       .filter(inv => inv.status === 'مدفوعة')
       .reduce((acc, inv) => acc + (parseInt(inv.amount.replace(/[^0-9]/g, '')) || 0), 0);
-    const totalExpenses = expenses
+
+    const totalIncomeFromEntries = (income || [])
+      .filter(inc => inc.status === 'مؤكد')
+      .reduce((acc, inc) => acc + (parseInt(inc.amount.replace(/[^0-9]/g, '')) || 0), 0);
+
+    const totalExpenses = (expenses || [])
       .reduce((acc, exp) => acc + (parseInt(exp.amount.replace(/[^0-9]/g, '')) || 0), 0);
-    return totalIncome - totalExpenses;
+
+    return (totalIncomeFromInv + totalIncomeFromEntries) - totalExpenses;
   };
 
   const stats = [
