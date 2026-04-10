@@ -23,7 +23,14 @@ export default function ForgotPassword() {
         </div>
 
         <Card className="p-8 shadow-xl border-none">
-          <form className="space-y-6">
+          <form
+            className="space-y-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              alert('تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.');
+              navigate('/login');
+            }}
+          >
             <Input
               label="البريد الإلكتروني"
               type="email"
