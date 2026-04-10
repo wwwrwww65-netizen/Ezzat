@@ -37,6 +37,12 @@ export const mockExpenses = [
   { id: 3, category: 'إيجار', amount: '10,000 ر.س', date: '2023-12-01', recipient: 'مكتب العقارات' },
 ];
 
+export const mockIncome = [
+  { id: 1, title: 'دفعة أولى - فيلا النرجس', method: 'تحويل بنكي', date: '2023-12-05', amount: '50,000 ر.س', status: 'مؤكد' },
+  { id: 2, title: 'مستخلص رقم 3 - برج الملك', method: 'شيك', date: '2023-12-04', amount: '120,000 ر.س', status: 'مؤكد' },
+  { id: 3, title: 'تجديد فندق الشاطئ', method: 'نقدًا', date: '2023-12-02', amount: '15,000 ر.س', status: 'قيد التحصيل' },
+];
+
 export const mockInventory = [
   { id: 1, name: 'رخام إيطالي كاريرا', category: 'رخام', quantity: '150 م2', minQuantity: '50 م2', status: 'متوفر' },
   { id: 2, name: 'أسمنت بورتلاندي', category: 'مواد أساسية', quantity: '20 كيس', minQuantity: '100 كيس', status: 'منخفض' },

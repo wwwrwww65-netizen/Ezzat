@@ -12,6 +12,10 @@ const reportTypes = [
 ];
 
 export default function Reports() {
+  const handleDownload = (title) => {
+    alert(`جاري إنشاء وتحميل ${title}...`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -23,7 +27,7 @@ export default function Reports() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {reportTypes.map((report, idx) => (
-          <Card key={idx} className="hover:shadow-md transition-shadow cursor-pointer group border-transparent hover:border-gray-200">
+          <Card key={idx} className="hover:shadow-md transition-shadow cursor-pointer group border-transparent hover:border-gray-200" onClick={() => handleDownload(report.title)}>
             <div className="flex items-start gap-4">
               <div className={`p-3 rounded-xl ${report.bg} ${report.color} group-hover:scale-110 transition-transform`}>
                 <report.icon className="w-6 h-6" />
@@ -35,7 +39,7 @@ export default function Reports() {
             </div>
             <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-50">
               <span className="text-xs font-medium text-gray-400">آخر تحديث: اليوم</span>
-              <Button variant="ghost" size="sm" className="text-primary-600">
+              <Button variant="ghost" size="sm" className="text-primary-600" onClick={(e) => { e.stopPropagation(); handleDownload(report.title); }}>
                 <Download className="w-4 h-4" />
                 تحميل PDF
               </Button>
