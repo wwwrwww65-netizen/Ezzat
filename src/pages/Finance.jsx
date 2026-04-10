@@ -9,12 +9,14 @@ export default function Finance() {
   const navigate = useNavigate();
 
   const totalIncome = (income || []).reduce((acc, curr) => {
-    const val = parseInt(curr.amount.replace(/[^0-9]/g, '')) || 0;
+    const amount = typeof curr.amount === 'string' ? curr.amount : String(curr.amount || 0);
+    const val = parseInt(amount.replace(/[^0-9]/g, '')) || 0;
     return acc + val;
   }, 0);
 
   const totalExpenses = (expenses || []).reduce((acc, curr) => {
-    const val = parseInt(curr.amount.replace(/[^0-9]/g, '')) || 0;
+    const amount = typeof curr.amount === 'string' ? curr.amount : String(curr.amount || 0);
+    const val = parseInt(amount.replace(/[^0-9]/g, '')) || 0;
     return acc + val;
   }, 0);
 

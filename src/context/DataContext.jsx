@@ -13,27 +13,31 @@ export const useData = () => {
 
 export const DataProvider = ({ children }) => {
   const [data, setData] = useState(() => {
+    const defaultData = {
+      projects: initialData.mockProjects || [],
+      clients: initialData.mockClients || [],
+      employees: initialData.mockEmployees || [],
+      invoices: initialData.mockInvoices || [],
+      expenses: initialData.mockExpenses || [],
+      income: initialData.mockIncome || [],
+      inventory: initialData.mockInventory || [],
+      suppliers: initialData.mockSuppliers || [],
+      activityLog: initialData.mockActivityLog || [],
+      users: initialData.mockUsers || [],
+      stats: initialData.mockStats || []
+    };
+
     const savedData = localStorage.getItem('ezzat_erp_data');
     if (savedData) {
       try {
-        return JSON.parse(savedData);
+        const parsed = JSON.parse(savedData);
+        // Ensure all keys exist by merging with defaultData
+        return { ...defaultData, ...parsed };
       } catch (e) {
         console.error('Failed to parse saved data', e);
       }
     }
-    return {
-      projects: initialData.mockProjects,
-      clients: initialData.mockClients,
-      employees: initialData.mockEmployees,
-      invoices: initialData.mockInvoices,
-      expenses: initialData.mockExpenses,
-      income: initialData.mockIncome || [],
-      inventory: initialData.mockInventory,
-      suppliers: initialData.mockSuppliers,
-      activityLog: initialData.mockActivityLog,
-      users: initialData.mockUsers,
-      stats: initialData.mockStats
-    };
+    return defaultData;
   });
 
   useEffect(() => {
