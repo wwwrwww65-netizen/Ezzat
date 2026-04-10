@@ -1,10 +1,10 @@
 import React from 'react';
 import { Card, Badge, Table } from '../components/UI';
-import { mockStats, mockProjects } from '../data/mockData';
+import { useData } from '../context/DataContext';
 import { TrendingUp, TrendingDown, Minus, Briefcase, Users, FileText, Wallet } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
+const chartData = [
   { name: 'يناير', total: 4000 },
   { name: 'فبراير', total: 3000 },
   { name: 'مارس', total: 5000 },
@@ -14,15 +14,23 @@ const data = [
 ];
 
 export default function Dashboard() {
-  const getIcon = (label) => {
-    switch (label) {
-      case 'إجمالي المشاريع': return Briefcase;
-      case 'المشاريع النشطة': return Briefcase;
-      case 'إجمالي العملاء': return Users;
-      case 'صافي الربح': return Wallet;
-      default: return FileText;
-    }
+  const { projects, clients, invoices, expenses } = useData();
+
+  const calculateProfit = () => {
+    const totalIncome = invoices
+      .filter(inv => inv.status === 'مدفوعة')
+      .reduce((acc, inv) => acc + (parseInt(inv.amount.replace(/[^0-9]/g, '')) || 0), 0);
+    const totalExpenses = expenses
+      .reduce((acc, exp) => acc + (parseInt(exp.amount.replace(/[^0-9]/g, '')) || 0), 0);
+    return totalIncome - totalExpenses;
   };
+
+  const stats = [
+    { label: 'إجمالي المشاريع', value: projects.length.toString(), trend: '+2', trendType: 'up', icon: Briefcase },
+    { label: 'المشاريع النشطة', value: projects.filter(p => p.status === 'نشط').length.toString(), trend: '0', trendType: 'neutral', icon: Briefcase },
+    { label: 'إجمالي العملاء', value: clients.length.toString(), trend: '+12', trendType: 'up', icon: Users },
+    { label: 'صافي الربح', value: `${calculateProfit().toLocaleString()} ر.س`, trend: '+15%', trendType: 'up', icon: Wallet },
+  ];
 
   return (
     <div className="space-y-6">
@@ -32,8 +40,8 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {mockStats.map((stat, idx) => {
-          const Icon = getIcon(stat.label);
+        {stats.map((stat, idx) => {
+          const Icon = stat.icon;
           return (
             <Card key={idx} className="p-0 overflow-hidden group">
               <div className="p-6">
@@ -62,7 +70,7 @@ export default function Dashboard() {
         <Card className="lg:col-span-2" title="إحصائيات الإيرادات">
           <div className="h-80 w-full mt-4" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
+              <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.1}/>
@@ -84,18 +92,18 @@ export default function Dashboard() {
 
         <Card title="أحدث المشاريع">
           <div className="space-y-4">
-            {mockProjects.slice(0, 5).map((project) => (
+            {projects.slice(0, 5).map((project) => (
               <div key={project.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-500">
-                    {project.name.charAt(0)}
+                    {project.name ? project.name.charAt(0) : '?'}
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-gray-800">{project.name}</p>
                     <p className="text-xs text-gray-500">{project.client}</p>
                   </div>
                 </div>
-                <Badge variant={project.status === 'نشط' ? 'success' : project.status === 'متأخر' ? 'danger' : 'warning'}>
+                <Badge variant={project.status === 'نشط' ? 'success' : project.status === 'مكتمل' ? 'info' : project.status === 'متأخر' ? 'danger' : 'warning'}>
                   {project.status}
                 </Badge>
               </div>
@@ -106,14 +114,12 @@ export default function Dashboard() {
 
       <Card title="المشاريع الجارية" noPadding>
         <Table headers={['اسم المشروع', 'العميل', 'الحالة', 'الإنجاز', 'تاريخ البدء']}>
-          {mockProjects.map((project) => (
+          {projects.filter(p => p.status === 'نشط').slice(0, 10).map((project) => (
             <tr key={project.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{project.name}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{project.client}</td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <Badge variant={project.status === 'نشط' ? 'success' : project.status === 'مكتمل' ? 'info' : project.status === 'متأخر' ? 'danger' : 'warning'}>
-                  {project.status}
-                </Badge>
+                <Badge variant="success">{project.status}</Badge>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center gap-2">
