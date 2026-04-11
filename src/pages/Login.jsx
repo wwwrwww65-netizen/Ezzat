@@ -14,7 +14,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4" dir="rtl">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-primary-600 rounded-2xl flex items-center justify-center text-white font-bold text-4xl mx-auto mb-4 shadow-lg">ع</div>
+          <div className="w-20 h-20 bg-primary-600 rounded-2xl flex items-center justify-center text-white font-bold text-4xl mx-auto mb-4 shadow-lg">أ</div>
           <h1 className="text-2xl font-bold text-gray-900">مرحباً بك مجدداً</h1>
           <p className="text-gray-500 mt-2">سجل الدخول للوصول إلى لوحة التحكم</p>
         </div>
@@ -58,7 +58,7 @@ export default function Login() {
         </Card>
 
         <p className="text-center mt-8 text-sm text-gray-500">
-          جميع الحقوق محفوظة &copy; {new Date().getFullYear()} شركة عزت للمقاولات
+          جميع الحقوق محفوظة &copy; {new Date().getFullYear()} شركة أبو جواد للمقاولات
         </p>
       </div>
     </div>

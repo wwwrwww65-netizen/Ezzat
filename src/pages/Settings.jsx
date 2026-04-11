@@ -6,8 +6,8 @@ import { Save, Bell, Globe, Lock, Building } from 'lucide-react';
 export default function Settings() {
   const { logActivity } = useData();
   const [formData, setFormData] = useState({
-    companyName: 'شركة عزت للمقاولات والرخام',
-    email: 'contact@ezzat.com',
+    companyName: 'شركة أبو جواد للمقاولات',
+    email: 'contact@abujawad.com',
     currency: 'ر.س',
     language: 'العربية',
     taxNumber: '300012345600003'
@@ -104,7 +104,7 @@ export default function Settings() {
             <div className="flex flex-col items-center text-center p-2">
               <Building className="w-12 h-12 mb-4 opacity-80" />
               <h3 className="font-bold text-lg">النسخة الاحترافية</h3>
-              <p className="text-sm opacity-90 mt-2">أنت تستخدم النسخة الكاملة من نظام إدارة شركة عزت</p>
+              <p className="text-sm opacity-90 mt-2">أنت تستخدم النسخة الكاملة من نظام إدارة شركة أبو جواد</p>
             </div>
           </Card>
         </div>

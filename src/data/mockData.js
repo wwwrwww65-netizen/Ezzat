@@ -6,11 +6,66 @@ export const mockStats = [
 ];
 
 export const mockProjects = [
-  { id: 1, name: 'فيلا حي النرجس', client: 'أحمد السديري', status: 'نشط', progress: 65, startDate: '2023-10-01' },
-  { id: 2, name: 'برج طريق الملك', client: 'شركة الراجحي', status: 'قيد الانتظار', progress: 15, startDate: '2023-11-15' },
-  { id: 3, name: 'مجمع تجاري الخبر', client: 'علي القحطاني', status: 'مكتمل', progress: 100, startDate: '2023-05-20' },
-  { id: 4, name: 'تجديد فندق الشاطئ', client: 'مجموعة المجد', status: 'متأخر', progress: 40, startDate: '2023-08-10' },
-  { id: 5, name: 'قصر الملقا', client: 'خالد بن سلطان', status: 'نشط', progress: 85, startDate: '2023-07-01' },
+  {
+    id: 1,
+    name: 'فيلا حي النرجس',
+    client: 'أحمد السديري',
+    status: 'نشط',
+    progress: 65,
+    startDate: '2023-10-01',
+    endDate: '2024-05-01',
+    type: 'فيلا',
+    location: 'الرياض - حي النرجس',
+    area: 450,
+    floors: 2,
+    specifications: 'تشطيب فاخر، رخام إيطالي',
+    budget: 1200000,
+    actualCost: 750000
+  },
+  {
+    id: 2,
+    name: 'برج طريق الملك',
+    client: 'شركة الراجحي',
+    status: 'قيد الانتظار',
+    progress: 15,
+    startDate: '2023-11-15',
+    endDate: '2025-12-15',
+    type: 'عمارة',
+    location: 'جدة - طريق الملك',
+    area: 1200,
+    floors: 15,
+    specifications: 'تجاري سكني',
+    budget: 15000000,
+    actualCost: 2000000
+  },
+  {
+    id: 3,
+    name: 'مجمع تجاري الخبر',
+    client: 'علي القحطاني',
+    status: 'مكتمل',
+    progress: 100,
+    startDate: '2023-05-20',
+    endDate: '2023-11-20',
+    type: 'عمارة',
+    location: 'الخبر - العزيزية',
+    area: 800,
+    floors: 1,
+    specifications: 'محلات تجارية',
+    budget: 3000000,
+    actualCost: 2850000
+  },
+];
+
+export const mockProjectStages = [
+  { id: 1, projectId: 1, name: 'الحفر', status: 'مكتمل', progress: 100, startDate: '2023-10-01', endDate: '2023-10-10' },
+  { id: 2, projectId: 1, name: 'القواعد', status: 'مكتمل', progress: 100, startDate: '2023-10-12', endDate: '2023-10-25' },
+  { id: 3, projectId: 1, name: 'الأعمدة', status: 'نشط', progress: 60, startDate: '2023-11-01', endDate: '2023-11-20' },
+  { id: 4, projectId: 1, name: 'السقف', status: 'قيد الانتظار', progress: 0, startDate: '2023-11-25', endDate: '2023-12-10' },
+];
+
+export const mockProjectFiles = [
+  { id: 1, projectId: 1, name: 'المخطط الإنشائي', type: 'DWG', size: '15MB', date: '2023-09-25', version: 'v1.2', stage: 'القواعد' },
+  { id: 2, projectId: 1, name: 'توزيع الكهرباء', type: 'PDF', size: '2MB', date: '2023-09-28', version: 'v1.0', stage: 'الكهرباء' },
 ];
 
 export const mockClients = [
@@ -20,9 +75,19 @@ export const mockClients = [
 ];
 
 export const mockEmployees = [
-  { id: 1, name: 'محمد علي', position: 'مهندس مدني', department: 'المشاريع', salary: '12,000 ر.س', status: 'على رأس العمل' },
-  { id: 2, name: 'سارة خالد', position: 'محاسبة', department: 'المالية', salary: '9,000 ر.س', status: 'على رأس العمل' },
-  { id: 3, name: 'ياسر إبراهيم', position: 'مشرف عمال', department: 'الميدان', salary: '7,500 ر.س', status: 'إجازة' },
+  { id: 1, name: 'محمد علي', position: 'مهندس مدني', department: 'المشاريع', salary: '12,000 ر.س', status: 'على رأس العمل', role: 'engineer' },
+  { id: 2, name: 'سارة خالد', position: 'محاسبة', department: 'المالية', salary: '9,000 ر.س', status: 'على رأس العمل', role: 'accountant' },
+  { id: 3, name: 'ياسر إبراهيم', position: 'مشرف عمال', department: 'الميدان', salary: '7,500 ر.س', status: 'إجازة', role: 'supervisor' },
+];
+
+export const mockLaborTeams = [
+  { id: 1, name: 'فريق النجارة', leader: 'أبو فهد', members: 5, dailyRate: 1500, status: 'نشط' },
+  { id: 2, name: 'فريق الحدادة', leader: 'كومار', members: 4, dailyRate: 1200, status: 'نشط' },
+];
+
+export const mockEquipment = [
+  { id: 1, name: 'رافعة شوكية', type: 'ثقيل', status: 'متوفر', dailyCost: 500, lastMaintenance: '2023-11-01' },
+  { id: 2, name: 'خلاطة أسمنت', type: 'متوسط', status: 'في الموقع', dailyCost: 200, lastMaintenance: '2023-12-05' },
 ];
 
 export const mockInvoices = [
@@ -44,9 +109,9 @@ export const mockIncome = [
 ];
 
 export const mockInventory = [
-  { id: 1, name: 'رخام إيطالي كاريرا', category: 'رخام', quantity: '150 م2', minQuantity: '50 م2', status: 'متوفر' },
-  { id: 2, name: 'أسمنت بورتلاندي', category: 'مواد أساسية', quantity: '20 كيس', minQuantity: '100 كيس', status: 'منخفض' },
-  { id: 3, name: 'جرانيت نجران', category: 'جرانيت', quantity: '0 م2', minQuantity: '20 م2', status: 'ناقد' },
+  { id: 1, name: 'بلك أسمنتي 20', category: 'بناء', quantity: 5000, unit: 'قطعة', unitPrice: 2.5, waste: 2, supplier: 'مصنع الرياض', status: 'متوفر' },
+  { id: 2, name: 'حديد 14 ملم', category: 'حديد', quantity: 15, unit: 'طن', unitPrice: 2800, waste: 3, supplier: 'حديد الراجحي', status: 'متوفر' },
+  { id: 3, name: 'أسمنت بورتلاندي', category: 'مواد أساسية', quantity: 200, unit: 'كيس', unitPrice: 15, waste: 1, supplier: 'أسمنت اليمامة', status: 'منخفض' },
 ];
 
 export const mockSuppliers = [
@@ -61,7 +126,7 @@ export const mockActivityLog = [
 ];
 
 export const mockUsers = [
-  { id: 1, name: 'أحمد محمد', email: 'admin@ezzat.com', role: 'مدير النظام', status: 'نشط' },
-  { id: 2, name: 'سارة خالد', email: 'sara@ezzat.com', role: 'محاسب', status: 'نشط' },
-  { id: 3, name: 'ياسر إبراهيم', email: 'yasser@ezzat.com', role: 'مشرف مشروع', status: 'غير نشط' },
+  { id: 1, name: 'أحمد محمد', email: 'admin@abujawad.com', role: 'مدير النظام', status: 'نشط' },
+  { id: 2, name: 'سارة خالد', email: 'sara@abujawad.com', role: 'محاسب', status: 'نشط' },
+  { id: 3, name: 'ياسر إبراهيم', email: 'yasser@abujawad.com', role: 'مشرف مشروع', status: 'نشط' },
 ];
