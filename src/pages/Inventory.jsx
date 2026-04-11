@@ -13,6 +13,10 @@ export default function Inventory() {
     category: '',
     quantity: '',
     minQuantity: '',
+    unit: 'قطعة',
+    unitPrice: 0,
+    waste: 0,
+    supplier: '',
     status: 'متوفر'
   });
 
@@ -125,13 +129,14 @@ export default function Inventory() {
             />
           </div>
         </div>
-        <Table headers={['اسم المادة', 'الفئة', 'الكمية الحالية', 'الحد الأدنى', 'الحالة', 'الإجراءات']}>
+        <Table headers={['اسم المادة', 'الفئة', 'الكمية الحالية', 'الوحدة', 'السعر', 'الحالة', 'الإجراءات']}>
           {filteredInventory.map((item) => (
             <tr key={item.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{item.name}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.category}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{item.quantity}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 font-mono">{item.minQuantity}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 font-mono">{item.unit || 'قطعة'}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">{item.unitPrice || 0} ر.س</td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <Badge variant={item.status === 'متوفر' ? 'success' : item.status === 'منخفض' ? 'warning' : 'danger'}>
                   {item.status}
@@ -174,14 +179,28 @@ export default function Inventory() {
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="الكمية الحالية"
+              type="number"
               value={formData.quantity}
               onChange={(e) => setFormData({...formData, quantity: e.target.value})}
               required
             />
             <Input
-              label="الحد الأدنى للتنبيه"
-              value={formData.minQuantity}
-              onChange={(e) => setFormData({...formData, minQuantity: e.target.value})}
+              label="الوحدة"
+              value={formData.unit}
+              onChange={(e) => setFormData({...formData, unit: e.target.value})}
+              placeholder="قطعة، م2، كيس..."
+            />
+            <Input
+              label="سعر الوحدة"
+              type="number"
+              value={formData.unitPrice}
+              onChange={(e) => setFormData({...formData, unitPrice: e.target.value})}
+            />
+            <Input
+              label="نسبة الهالك (%)"
+              type="number"
+              value={formData.waste}
+              onChange={(e) => setFormData({...formData, waste: e.target.value})}
             />
           </div>
           <Select

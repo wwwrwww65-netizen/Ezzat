@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Table, Button, Input, Modal, Select } from '../components/UI';
 import { useData } from '../context/DataContext';
 import { Plus, Search, Filter, Edit, Trash2, Eye } from 'lucide-react';
 
 export default function Projects() {
+  const navigate = useNavigate();
   const { projects, clients, addItem, updateItem, deleteItem } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -109,7 +111,7 @@ export default function Projects() {
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <div className="flex items-center gap-2">
-                  <button className="p-1 hover:text-primary-600 transition-colors" title="عرض"><Eye className="w-4 h-4" /></button>
+                  <button onClick={() => navigate(`/projects/${project.id}`)} className="p-1 hover:text-primary-600 transition-colors" title="عرض"><Eye className="w-4 h-4" /></button>
                   <button onClick={() => handleOpenModal(project)} className="p-1 hover:text-amber-600 transition-colors" title="تعديل"><Edit className="w-4 h-4" /></button>
                   <button onClick={() => deleteItem('projects', project.id)} className="p-1 hover:text-red-600 transition-colors" title="حذف"><Trash2 className="w-4 h-4" /></button>
                 </div>

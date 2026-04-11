@@ -1,7 +1,21 @@
 import React from 'react';
-import { Search, Bell, UserCircle, Menu } from 'lucide-react';
+import { Search, Bell, UserCircle, Menu, Shield } from 'lucide-react';
+import { useData } from '../context/DataContext';
 
 export default function Topbar() {
+  const { currentRole, setData } = useData();
+
+  const roles = [
+    { id: 'admin', name: 'مدير النظام', color: 'text-red-600' },
+    { id: 'engineer', name: 'مهندس', color: 'text-blue-600' },
+    { id: 'client', name: 'عميل', color: 'text-emerald-600' },
+    { id: 'supervisor', name: 'مشرف موقع', color: 'text-amber-600' },
+  ];
+
+  const handleRoleChange = (e) => {
+    setData(prev => ({ ...prev, currentRole: e.target.value }));
+  };
+
   return (
     <header className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-10">
       <div className="flex items-center gap-4 flex-1">
@@ -21,6 +35,19 @@ export default function Topbar() {
       </div>
 
       <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
+          <Shield className="w-4 h-4 text-gray-400" />
+          <select
+            value={currentRole}
+            onChange={handleRoleChange}
+            className="bg-transparent border-none text-xs font-bold text-gray-700 focus:ring-0 cursor-pointer outline-none"
+          >
+            {roles.map(role => (
+              <option key={role.id} value={role.id}>{role.name}</option>
+            ))}
+          </select>
+        </div>
+
         <button className="relative p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors">
           <Bell className="w-6 h-6" />
           <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
@@ -31,7 +58,7 @@ export default function Topbar() {
         <div className="flex items-center gap-3 cursor-pointer group">
           <div className="text-left hidden sm:block">
             <p className="text-sm font-semibold text-gray-700 group-hover:text-primary-600 transition-colors">أحمد محمد</p>
-            <p className="text-xs text-gray-500">مدير النظام</p>
+            <p className="text-xs text-gray-500">{roles.find(r => r.id === currentRole)?.name}</p>
           </div>
           <UserCircle className="w-8 h-8 text-gray-400 group-hover:text-primary-600 transition-colors" />
         </div>

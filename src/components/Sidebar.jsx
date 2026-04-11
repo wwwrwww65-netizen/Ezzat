@@ -26,19 +26,17 @@ function cn(...inputs) {
 
 const navItems = [
   { name: 'لوحة التحكم', href: '/', icon: LayoutDashboard },
-  { name: 'المشاريع', href: '/projects', icon: Briefcase },
+  { name: 'إدارة المشاريع', href: '/projects', icon: Briefcase },
   { name: 'العملاء', href: '/clients', icon: Users },
-  { name: 'الموظفون', href: '/employees', icon: UserSquare2 },
-  { name: 'المالية', href: '/finance', icon: Wallet },
-  { name: 'الفواتير', href: '/invoices', icon: FileText },
-  { name: 'المصروفات', href: '/expenses', icon: TrendingDown },
-  { name: 'الإيرادات', href: '/income', icon: TrendingUp },
-  { name: 'المخزون', href: '/inventory', icon: Package },
-  { name: 'الموردون', href: '/suppliers', icon: Truck },
-  { name: 'التقارير', href: '/reports', icon: BarChart3 },
-  { name: 'الإعدادات', href: '/settings', icon: Settings },
-  { name: 'المستخدمون', href: '/users', icon: ShieldCheck },
+  { name: 'المالية والمحاسبة', href: '/finance', icon: Wallet },
+  { name: 'المشتريات والموردين', href: '/suppliers', icon: Truck },
+  { name: 'العمالة والمعدات', href: '/employees', icon: UserSquare2 },
+  { name: 'المخزون والمواد', href: '/inventory', icon: Package },
+  { name: 'الفواتير والسندات', href: '/invoices', icon: FileText },
+  { name: 'التقارير والإحصائيات', href: '/reports', icon: BarChart3 },
   { name: 'سجل النشاط', href: '/activity-log', icon: History },
+  { name: 'المستخدمون والصلاحيات', href: '/users', icon: ShieldCheck },
+  { name: 'الإعدادات العامة', href: '/settings', icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -46,8 +44,8 @@ export default function Sidebar() {
     <aside className="w-64 bg-white border-l border-gray-200 h-screen sticky top-0 flex flex-col transition-all duration-300">
       <div className="p-6 border-b border-gray-100">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">ع</div>
-          <span className="text-xl font-bold text-gray-800">عزت للمقاولات</span>
+          <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">أ</div>
+          <span className="text-xl font-bold text-gray-800">أبو جواد للمقاولات</span>
         </div>
       </div>
 

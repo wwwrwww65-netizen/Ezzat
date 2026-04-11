@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import Projects from './pages/Projects';
+import ProjectDetails from './pages/ProjectDetails';
 import Clients from './pages/Clients';
 import Employees from './pages/Employees';
 import Finance from './pages/Finance';
@@ -33,6 +34,7 @@ function App() {
         <Route element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/projects" element={<Projects />} />
+          <Route path="/projects/:id" element={<ProjectDetails />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/employees" element={<Employees />} />
           <Route path="/finance" element={<Finance />} />

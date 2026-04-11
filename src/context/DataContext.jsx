@@ -22,12 +22,17 @@ export const DataProvider = ({ children }) => {
       income: initialData.mockIncome || [],
       inventory: initialData.mockInventory || [],
       suppliers: initialData.mockSuppliers || [],
+      projectStages: initialData.mockProjectStages || [],
+      projectFiles: initialData.mockProjectFiles || [],
+      laborTeams: initialData.mockLaborTeams || [],
+      equipment: initialData.mockEquipment || [],
       activityLog: initialData.mockActivityLog || [],
       users: initialData.mockUsers || [],
-      stats: initialData.mockStats || []
+      stats: initialData.mockStats || [],
+      currentRole: 'admin' // Add role tracking
     };
 
-    const savedData = localStorage.getItem('ezzat_erp_data');
+    const savedData = localStorage.getItem('abujawad_erp_data');
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
@@ -41,7 +46,7 @@ export const DataProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    localStorage.setItem('ezzat_erp_data', JSON.stringify(data));
+    localStorage.setItem('abujawad_erp_data', JSON.stringify(data));
   }, [data]);
 
   // Generic CRUD helpers
