@@ -23,7 +23,7 @@ function App() {
   const isAuthenticated = true;
 
   return (
-    <Router basename="/Ezzat">
+    <Router>
       <Routes>
         {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
