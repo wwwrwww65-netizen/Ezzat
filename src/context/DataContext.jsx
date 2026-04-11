@@ -18,25 +18,30 @@ export const DataProvider = ({ children }) => {
       clients: initialData.mockClients || [],
       employees: initialData.mockEmployees || [],
       invoices: initialData.mockInvoices || [],
+      payments: initialData.mockPayments || [],
+      bonds: initialData.mockBonds || [],
       expenses: initialData.mockExpenses || [],
       income: initialData.mockIncome || [],
       inventory: initialData.mockInventory || [],
+      categories: initialData.mockCategories || [],
       suppliers: initialData.mockSuppliers || [],
+      purchaseOrders: initialData.mockPurchaseOrders || [],
       projectStages: initialData.mockProjectStages || [],
       projectFiles: initialData.mockProjectFiles || [],
       laborTeams: initialData.mockLaborTeams || [],
       equipment: initialData.mockEquipment || [],
+      tasks: initialData.mockTasks || [],
+      notifications: initialData.mockNotifications || [],
       activityLog: initialData.mockActivityLog || [],
       users: initialData.mockUsers || [],
       stats: initialData.mockStats || [],
-      currentRole: 'admin' // Add role tracking
+      currentRole: 'admin'
     };
 
     const savedData = localStorage.getItem('abujawad_erp_data');
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
-        // Ensure all keys exist by merging with defaultData
         return { ...defaultData, ...parsed };
       } catch (e) {
         console.error('Failed to parse saved data', e);
@@ -49,13 +54,49 @@ export const DataProvider = ({ children }) => {
     localStorage.setItem('abujawad_erp_data', JSON.stringify(data));
   }, [data]);
 
-  // Generic CRUD helpers
-  const addItem = (key, item) => {
+  // Activity Logger
+  const logActivity = (action, user = 'أحمد محمد') => {
+    const newLog = {
+      id: Date.now(),
+      user,
+      action,
+      time: new Date().toLocaleString('ar-SA'),
+      ip: '192.168.1.1'
+    };
     setData(prev => ({
       ...prev,
-      [key]: [item, ...prev[key]]
+      activityLog: [newLog, ...prev.activityLog].slice(0, 100)
     }));
-    logActivity(`إضافة ${key.slice(0, -1)} جديد: ${item.name || item.id}`);
+  };
+
+  // Advanced Interconnected CRUD
+  const addItem = (key, item) => {
+    const newItem = { ...item, id: item.id || Date.now() };
+    setData(prev => {
+      const newState = { ...prev, [key]: [newItem, ...prev[key]] };
+
+      // Interconnection Logic
+      if (key === 'expenses' && item.projectId) {
+         newState.projects = prev.projects.map(p =>
+          p.id === item.projectId ? { ...p, actualCost: (Number(p.actualCost) || 0) + Number(item.amount) } : p
+        );
+      }
+
+      if (key === 'payments' && item.entityType === 'client') {
+        newState.clients = prev.clients.map(c =>
+          c.id === item.entityId ? { ...c, currentBalance: (Number(c.currentBalance) || 0) - Number(item.amount) } : c
+        );
+      }
+
+      if (key === 'invoices' && item.clientId) {
+        newState.clients = prev.clients.map(c =>
+          c.id === item.clientId ? { ...c, currentBalance: (Number(c.currentBalance) || 0) + Number(item.total) } : c
+        );
+      }
+
+      return newState;
+    });
+    logActivity(`إضافة ${key} جديد: ${item.name || item.id || item.title}`);
   };
 
   const updateItem = (key, id, updatedItem) => {
@@ -63,30 +104,30 @@ export const DataProvider = ({ children }) => {
       ...prev,
       [key]: prev[key].map(item => item.id === id ? { ...item, ...updatedItem } : item)
     }));
-    logActivity(`تحديث ${key.slice(0, -1)}: ${updatedItem.name || id}`);
+    logActivity(`تحديث في ${key}: ${updatedItem.name || id}`);
   };
 
   const deleteItem = (key, id) => {
     const itemToDelete = data[key].find(item => item.id === id);
-    setData(prev => ({
-      ...prev,
-      [key]: prev[key].filter(item => item.id !== id)
-    }));
-    logActivity(`حذف ${key.slice(0, -1)}: ${itemToDelete?.name || id}`);
-  };
+    setData(prev => {
+      const newState = { ...prev, [key]: prev[key].filter(item => item.id !== id) };
 
-  const logActivity = (action) => {
-    const newLog = {
-      id: Date.now(),
-      user: 'أحمد محمد', // Default for now
-      action,
-      time: 'الآن',
-      ip: '192.168.1.1'
-    };
-    setData(prev => ({
-      ...prev,
-      activityLog: [newLog, ...prev.activityLog].slice(0, 50) // Keep last 50
-    }));
+      // Reverse Interconnection Logic on Delete
+      if (key === 'expenses' && itemToDelete?.projectId) {
+        newState.projects = prev.projects.map(p =>
+          p.id === itemToDelete.projectId ? { ...p, actualCost: Math.max(0, (Number(p.actualCost) || 0) - Number(itemToDelete.amount)) } : p
+        );
+      }
+
+      if (key === 'invoices' && itemToDelete?.clientId) {
+        newState.clients = prev.clients.map(c =>
+          c.id === itemToDelete.clientId ? { ...c, currentBalance: Math.max(0, (Number(c.currentBalance) || 0) - Number(itemToDelete.total)) } : c
+        );
+      }
+
+      return newState;
+    });
+    logActivity(`حذف من ${key}: ${itemToDelete?.name || id}`);
   };
 
   const value = {

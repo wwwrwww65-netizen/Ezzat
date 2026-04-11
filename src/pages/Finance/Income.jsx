@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Table, Button, Badge, Modal, Input, Select } from '../components/UI';
-import { useData } from '../context/DataContext';
+import { Card, Table, Button, Badge, Modal, Input, Select } from '../../components/UI';
+import { useData } from '../../context/DataContext';
 import { TrendingUp, Plus, Search, Trash2 } from 'lucide-react';
 
 export default function Income() {
