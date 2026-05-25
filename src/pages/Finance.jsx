@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Badge, Table, Button, Input, Modal, Select } from '../components/UI';
+import { Card, Badge, Table, Button, Input, Modal, Select, cn } from '../components/UI';
 import { useData } from '../context/DataContext';
 import {
   Wallet,
@@ -17,7 +17,9 @@ import {
   Plus,
   Filter,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Building2,
+  Truck
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
@@ -28,16 +30,30 @@ const chartData = [
   { name: 'الأسبوع 4', income: 65000, expense: 42000 },
 ];
 
+const parseAmount = (val) => {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  const cleaned = String(val).replace(/[^0-9.]/g, '');
+  return parseFloat(cleaned) || 0;
+};
+
 export default function Finance() {
-  const { invoices, expenses, income, bonds, payments } = useData();
+  const { invoices, expenses, income, bonds, payments, theme } = useData();
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [transactionType, setTransactionType] = useState('income');
+  const isDark = theme === 'dark';
+  const chartGridColor  = isDark ? '#30363d' : '#f1f5f9';
+  const chartTextColor  = isDark ? '#8b949e' : '#64748b';
+  const chartCursor     = isDark ? { fill: 'rgba(255,255,255,0.03)' } : { fill: '#f8fafc' };
+  const tooltipStyle    = isDark
+    ? { borderRadius: '12px', border: '1px solid #30363d', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', padding: '10px', backgroundColor: '#161b22', color: '#e6edf3' }
+    : { borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '10px' };
 
-  const totalIncome = (invoices.filter(i => i.status === 'مدفوعة').reduce((acc, i) => acc + Number(i.total || 0), 0)) +
-                    (income.filter(i => i.status === 'مؤكد').reduce((acc, i) => acc + Number(i.amount || 0), 0));
+  const totalIncome = (invoices.filter(i => i.status === 'مدفوعة').reduce((acc, i) => acc + parseAmount(i.total), 0)) +
+                    (income.filter(i => i.status === 'مؤكد').reduce((acc, i) => acc + parseAmount(i.amount), 0));
 
-  const totalExpenses = (expenses.reduce((acc, e) => acc + Number(e.amount || 0), 0)) +
-                        (payments.filter(p => p.entityType === 'supplier').reduce((acc, p) => acc + Number(p.amount || 0), 0));
+  const totalExpenses = (expenses.reduce((acc, e) => acc + parseAmount(e.amount), 0)) +
+                        (payments.filter(p => p.entityType === 'supplier').reduce((acc, p) => acc + parseAmount(p.amount), 0));
 
   const netProfit = totalIncome - totalExpenses;
 
@@ -45,7 +61,7 @@ export default function Finance() {
     { label: 'إجمالي المقبوضات', value: totalIncome.toLocaleString() + ' ر.س', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'إجمالي المصروفات', value: totalExpenses.toLocaleString() + ' ر.س', icon: TrendingDown, color: 'text-red-600', bg: 'bg-red-50' },
     { label: 'صافي الربح التقديري', value: netProfit.toLocaleString() + ' ر.س', icon: Wallet, color: 'text-primary-600', bg: 'bg-primary-50' },
-    { label: 'تدفقات نقدية معلقة', value: invoices.filter(i => i.status === 'معلقة').reduce((acc, i) => acc + Number(i.total || 0), 0).toLocaleString() + ' ر.س', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'تدفقات نقدية معلقة', value: invoices.filter(i => i.status === 'معلقة').reduce((acc, i) => acc + parseAmount(i.total), 0).toLocaleString() + ' ر.س', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
   ];
 
   return (
@@ -88,10 +104,10 @@ export default function Finance() {
           <div className="h-80 w-full mt-4" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartGridColor} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: chartTextColor }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: chartTextColor }} />
+                <Tooltip cursor={chartCursor} contentStyle={tooltipStyle} />
                 <Bar dataKey="income" name="الإيرادات" fill="#10b981" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="expense" name="المصروفات" fill="#ef4444" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -137,7 +153,7 @@ export default function Finance() {
               <tr key={bond.id}>
                 <td className="px-6 py-4 font-medium text-gray-900">{bond.id}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{bond.entityName}</td>
-                <td className="px-6 py-4 font-bold">{Number(bond.amount).toLocaleString()} ر.س</td>
+                <td className="px-6 py-4 font-bold">{parseAmount(bond.amount).toLocaleString()} ر.س</td>
                 <td className="px-6 py-4">
                   <Badge variant={bond.type === 'قبض' ? 'success' : 'danger'}>{bond.type}</Badge>
                 </td>
@@ -155,7 +171,7 @@ export default function Finance() {
               <tr key={exp.id}>
                 <td className="px-6 py-4 text-sm text-gray-500">{exp.date}</td>
                 <td className="px-6 py-4 text-sm font-medium text-gray-800">{exp.category}</td>
-                <td className="px-6 py-4 font-bold text-red-600">{Number(exp.amount).toLocaleString()} ر.س</td>
+                <td className="px-6 py-4 font-bold text-red-600">{parseAmount(exp.amount).toLocaleString()} ر.س</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{exp.recipient}</td>
               </tr>
             ))}
@@ -164,8 +180,4 @@ export default function Finance() {
       </div>
     </div>
   );
-}
-
-function cn(...inputs) {
-  return inputs.filter(Boolean).join(' ');
 }

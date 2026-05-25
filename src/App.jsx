@@ -30,6 +30,9 @@ import Requests from './pages/Requests';
 import DocumentCenter from './pages/DocumentCenter';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
+import BOQ from './pages/BOQ';
+import Valuations from './pages/Valuations';
+import DailyLogs from './pages/DailyLogs';
 
 function App() {
   const isAuthenticated = true;
@@ -68,6 +71,9 @@ function App() {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/requests" element={<Requests />} />
           <Route path="/documents" element={<DocumentCenter />} />
+          <Route path="/boq" element={<BOQ />} />
+          <Route path="/valuations" element={<Valuations />} />
+          <Route path="/daily-logs" element={<DailyLogs />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />

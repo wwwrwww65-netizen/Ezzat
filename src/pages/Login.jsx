@@ -11,15 +11,15 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4" dir="rtl">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0d1117] px-4 transition-colors duration-200" dir="rtl">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-primary-600 rounded-2xl flex items-center justify-center text-white font-bold text-4xl mx-auto mb-4 shadow-lg">أ</div>
-          <h1 className="text-2xl font-bold text-gray-900">مرحباً بك مجدداً</h1>
-          <p className="text-gray-500 mt-2">سجل الدخول للوصول إلى لوحة التحكم</p>
+          <div className="w-20 h-20 bg-primary-600 rounded-2xl flex items-center justify-center text-white font-bold text-4xl mx-auto mb-4 shadow-lg shadow-blue-200/40 dark:shadow-blue-900/40">أ</div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">مرحباً بك مجدداً</h1>
+          <p className="text-gray-500 dark:text-slate-400 mt-2">سجل الدخول للوصول إلى لوحة التحكم</p>
         </div>
 
-        <Card className="p-8 shadow-xl border-none">
+        <Card className="p-8 shadow-xl border-none dark:border dark:border-slate-800">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <Input
               label="البريد الإلكتروني"
@@ -29,26 +29,26 @@ export default function Login() {
             />
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">كلمة المرور</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">كلمة المرور</label>
                 <button
                   type="button"
                   onClick={() => navigate('/forgot-password')}
-                  className="text-xs font-semibold text-primary-600 hover:text-primary-500"
+                  className="text-xs font-semibold text-primary-600 dark:text-blue-400 hover:text-primary-500 dark:hover:text-blue-300"
                 >
                   نسيت كلمة المرور؟
                 </button>
               </div>
               <input
                 type="password"
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm transition-all focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 hover:border-gray-400"
+                className="block w-full px-3 py-2 border border-gray-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-lg text-sm transition-all focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-blue-500 dark:focus:border-blue-500 hover:border-gray-400 dark:hover:border-slate-600 dark:placeholder-slate-500"
                 placeholder="••••••••"
                 required
               />
             </div>
 
             <div className="flex items-center">
-              <input id="remember-me" type="checkbox" className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded" />
-              <label htmlFor="remember-me" className="mr-2 block text-sm text-gray-700">تذكرني</label>
+              <input id="remember-me" type="checkbox" className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded dark:border-slate-600 dark:bg-slate-900" />
+              <label htmlFor="remember-me" className="mr-2 block text-sm text-gray-700 dark:text-slate-300">تذكرني</label>
             </div>
 
             <Button type="submit" className="w-full py-2.5 text-base" size="lg">
@@ -57,7 +57,7 @@ export default function Login() {
           </form>
         </Card>
 
-        <p className="text-center mt-8 text-sm text-gray-500">
+        <p className="text-center mt-8 text-sm text-gray-500 dark:text-slate-500">
           جميع الحقوق محفوظة &copy; {new Date().getFullYear()} شركة أبو جواد للمقاولات
         </p>
       </div>

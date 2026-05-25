@@ -3,6 +3,13 @@ import { Card, Table, Button, Badge, Modal, Input, Select } from '../../componen
 import { useData } from '../../context/DataContext';
 import { TrendingUp, Plus, Search, Trash2 } from 'lucide-react';
 
+const parseAmount = (val) => {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  const cleaned = String(val).replace(/[^0-9.]/g, '');
+  return parseFloat(cleaned) || 0;
+};
+
 export default function Income() {
   const { income, addItem, deleteItem } = useData();
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,7 +32,7 @@ export default function Income() {
     addItem('income', {
       ...formData,
       id: Date.now(),
-      amount: `${parseInt(formData.amount).toLocaleString()} ر.س`
+      amount: parseFloat(formData.amount) || 0
     });
     setIsModalOpen(false);
     setFormData({
@@ -38,8 +45,7 @@ export default function Income() {
   };
 
   const totalIncome = (income || []).reduce((acc, curr) => {
-    const val = parseInt(curr.amount.replace(/[^0-9]/g, '')) || 0;
-    return acc + val;
+    return acc + parseAmount(curr.amount);
   }, 0);
 
   return (
@@ -104,7 +110,7 @@ export default function Income() {
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.title}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.method}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{item.date}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600">{item.amount}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-600">{parseAmount(item.amount).toLocaleString()} ر.س</td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <Badge variant={item.status === 'مؤكد' ? 'success' : 'warning'}>
                   {item.status}

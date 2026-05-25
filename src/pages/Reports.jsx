@@ -22,8 +22,15 @@ import {
 } from 'recharts';
 
 export default function Reports() {
-  const { projects, clients, inventory, invoices, expenses } = useData();
+  const { projects, clients, inventory, invoices, expenses, theme } = useData();
   const [reportType, setReportType] = useState('financial');
+  const isDark = theme === 'dark';
+  const chartGrid   = isDark ? '#30363d' : '#f1f5f9';
+  const chartText   = isDark ? '#8b949e' : '#64748b';
+  const chartCursor = isDark ? { fill: 'rgba(255,255,255,0.03)' } : { fill: '#f8fafc' };
+  const tooltip     = isDark
+    ? { borderRadius: '16px', border: '1px solid #30363d', boxShadow: '0 20px 25px rgba(0,0,0,0.5)', padding: '12px', backgroundColor: '#161b22', color: '#e6edf3' }
+    : { borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' };
 
   const financialData = [
     { name: 'يناير', income: 450000, expense: 280000 },
@@ -69,8 +76,8 @@ export default function Reports() {
             onClick={() => setReportType(opt.id)}
             className={`p-4 rounded-2xl border transition-all text-right group ${
               reportType === opt.id
-              ? 'bg-primary-600 border-primary-600 text-white shadow-xl shadow-primary-100'
-              : 'bg-white border-gray-100 text-gray-600 hover:border-primary-200 hover:bg-gray-50'
+              ? 'bg-primary-600 border-primary-600 text-white shadow-xl shadow-primary-100 dark:shadow-blue-900/30'
+              : 'bg-white dark:bg-[#161b22] border-gray-100 dark:border-[#30363d] text-gray-600 dark:text-slate-400 hover:border-primary-200 dark:hover:border-blue-800 hover:bg-gray-50 dark:hover:bg-[#21262d]'
             }`}
           >
             <opt.icon className={`w-6 h-6 mb-3 ${reportType === opt.id ? 'text-white' : 'text-primary-600'}`} />
@@ -85,12 +92,12 @@ export default function Reports() {
           <div className="h-[400px] w-full mt-6" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={financialData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartGrid} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: chartText }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: chartText }} />
                 <Tooltip
-                  cursor={{fill: '#f8fafc'}}
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                  cursor={chartCursor}
+                  contentStyle={tooltip}
                 />
                 <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
                 <Bar dataKey="income" name="الإيرادات" fill="#1e3a8a" radius={[6, 6, 0, 0]} />

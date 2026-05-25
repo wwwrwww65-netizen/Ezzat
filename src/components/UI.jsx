@@ -9,11 +9,11 @@ export function cn(...inputs) {
 
 export const Button = ({ className, variant = 'primary', size = 'md', children, ...props }) => {
   const variants = {
-    primary: 'bg-[#1e3a8a] text-white hover:bg-[#1e40af] shadow-md shadow-blue-100 active:scale-95',
-    secondary: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 shadow-sm active:scale-95',
-    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-100 active:scale-95',
-    ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 active:scale-95',
-    outline: 'bg-transparent border-2 border-[#1e3a8a] text-[#1e3a8a] hover:bg-blue-50 font-bold active:scale-95',
+    primary: 'bg-[#1e3a8a] text-white hover:bg-[#1e40af] shadow-md shadow-blue-100 dark:shadow-none active:scale-95 dark:bg-blue-600 dark:hover:bg-blue-700',
+    secondary: 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 shadow-sm active:scale-95 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700',
+    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-100 dark:shadow-none active:scale-95 dark:bg-red-700 dark:hover:bg-red-600',
+    ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-800',
+    outline: 'bg-transparent border-2 border-[#1e3a8a] text-[#1e3a8a] hover:bg-blue-50 font-bold active:scale-95 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-blue-950/30',
   };
 
   const sizes = {
@@ -39,17 +39,17 @@ export const Button = ({ className, variant = 'primary', size = 'md', children, 
 
 export const Card = ({ className, children, title, subtitle, footer, noPadding = false }) => {
   return (
-    <div className={cn('bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300', className)}>
+    <div className={cn('bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300', className)}>
       {(title || subtitle) && (
-        <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
+        <div className="px-6 py-5 border-b border-gray-50 dark:border-slate-800/80 flex items-center justify-between">
           <div>
-             {title && <h3 className="text-lg font-black text-gray-800 tracking-tight">{title}</h3>}
-             {subtitle && <p className="text-xs text-gray-400 mt-0.5 font-medium">{subtitle}</p>}
+             {title && <h3 className="text-lg font-black text-gray-800 dark:text-slate-100 tracking-tight">{title}</h3>}
+             {subtitle && <p className="text-xs text-gray-400 dark:text-slate-400 mt-0.5 font-medium">{subtitle}</p>}
           </div>
         </div>
       )}
       <div className={cn(!noPadding && 'p-6')}>{children}</div>
-      {footer && <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-50">{footer}</div>}
+      {footer && <div className="px-6 py-4 bg-gray-50/50 dark:bg-slate-950/20 border-t border-gray-50 dark:border-slate-800/80">{footer}</div>}
     </div>
   );
 };
@@ -72,19 +72,19 @@ export const Modal = ({ isOpen, onClose, title, children, footer, className }) =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md transition-opacity animate-in fade-in duration-300">
-      <div className={cn("bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 relative", className)}>
-        <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
-          <h3 className="text-xl font-black text-gray-800 tracking-tight">{title}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-all hover:rotate-90">
-            <X className="w-5 h-5 text-gray-400" />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 dark:bg-black/70 backdrop-blur-md transition-opacity animate-in fade-in duration-300">
+      <div className={cn("bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 relative", className)}>
+        <div className="px-8 py-6 border-b border-gray-50 dark:border-slate-800/80 flex items-center justify-between">
+          <h3 className="text-xl font-black text-gray-800 dark:text-slate-100 tracking-tight">{title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all hover:rotate-90">
+            <X className="w-5 h-5 text-gray-400 dark:text-slate-500" />
           </button>
         </div>
-        <div className="p-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
+        <div className="p-8 max-h-[80vh] overflow-y-auto custom-scrollbar text-gray-700 dark:text-slate-350">
           {children}
         </div>
         {footer && (
-          <div className="px-8 py-6 bg-gray-50/50 border-t border-gray-50">
+          <div className="px-8 py-6 bg-gray-50/50 dark:bg-slate-950/20 border-t border-gray-50 dark:border-slate-800/80">
             {footer}
           </div>
         )}
@@ -96,20 +96,20 @@ export const Modal = ({ isOpen, onClose, title, children, footer, className }) =
 export const Select = ({ label, options, error, className, ...props }) => {
   return (
     <div className="space-y-2 w-full">
-      {label && <label className="block text-xs font-black text-gray-500 uppercase tracking-widest">{label}</label>}
+      {label && <label className="block text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">{label}</label>}
       <select
         className={cn(
-          'block w-full px-4 py-3 border rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-2 bg-gray-50/50 border-transparent hover:bg-gray-100/50',
+          'block w-full px-4 py-3 border rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-2 bg-gray-50/50 border-transparent hover:bg-gray-100/50 dark:bg-slate-950/40 dark:border-slate-800 dark:hover:bg-slate-900/40',
           error
             ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500'
-            : 'text-gray-900 focus:ring-primary-500/20 focus:border-primary-500',
+            : 'text-gray-900 dark:text-slate-100 focus:ring-primary-500/20 focus:border-primary-500 dark:focus:ring-primary-500/10',
           className
         )}
         {...props}
       >
         <option value="">اختر...</option>
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
+          <option key={opt.value} value={opt.value} className="dark:bg-slate-900 dark:text-slate-100">
             {opt.label}
           </option>
         ))}
@@ -122,13 +122,13 @@ export const Select = ({ label, options, error, className, ...props }) => {
 export const Input = ({ className, label, error, ...props }) => {
   return (
     <div className="space-y-2 w-full">
-      {label && <label className="block text-xs font-black text-gray-500 uppercase tracking-widest">{label}</label>}
+      {label && <label className="block text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">{label}</label>}
       <input
         className={cn(
-          'block w-full px-4 py-3 border rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-2 bg-gray-50/50 border-transparent hover:bg-gray-100/50 placeholder-gray-400',
+          'block w-full px-4 py-3 border rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-2 bg-gray-50/50 border-transparent hover:bg-gray-100/50 placeholder-gray-400 dark:bg-slate-950/40 dark:border-slate-800 dark:hover:bg-slate-900/40 dark:placeholder-slate-500',
           error
             ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500'
-            : 'text-gray-900 focus:ring-primary-500/20 focus:border-primary-500',
+            : 'text-gray-900 dark:text-slate-100 focus:ring-primary-500/20 focus:border-primary-500 dark:focus:ring-primary-500/10',
           className
         )}
         {...props}
@@ -140,12 +140,12 @@ export const Input = ({ className, label, error, ...props }) => {
 
 export const Badge = ({ className, variant = 'neutral', children }) => {
   const variants = {
-    neutral: 'bg-gray-100 text-gray-700',
-    success: 'bg-emerald-100 text-emerald-700',
-    warning: 'bg-amber-100 text-amber-700',
-    danger: 'bg-red-100 text-red-700',
-    info: 'bg-blue-100 text-blue-700',
-    primary: 'bg-primary-100 text-primary-700',
+    neutral: 'bg-gray-100 text-gray-700 dark:bg-slate-850 dark:text-slate-300',
+    success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+    warning: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+    danger: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400',
+    info: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400',
+    primary: 'bg-primary-100 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400',
   };
 
   return (
@@ -158,17 +158,17 @@ export const Badge = ({ className, variant = 'neutral', children }) => {
 export const Table = ({ headers, children, className }) => {
   return (
     <div className={cn('overflow-x-auto custom-scrollbar', className)}>
-      <table className="min-w-full divide-y divide-gray-100">
-        <thead className="bg-gray-50/50">
+      <table className="min-w-full divide-y divide-gray-100 dark:divide-slate-800">
+        <thead className="bg-gray-50/50 dark:bg-slate-900/50">
           <tr>
             {headers.map((header, idx) => (
-              <th key={idx} className="px-6 py-4 text-right text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
+              <th key={idx} className="px-6 py-4 text-right text-xs font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap">
                 {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-50">
+        <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-50 dark:divide-slate-800/80 text-gray-750 dark:text-slate-200">
           {children}
         </tbody>
       </table>

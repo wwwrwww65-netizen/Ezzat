@@ -50,6 +50,40 @@ export const DataProvider = ({ children }) => {
     return defaultData;
   });
 
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) return savedTheme;
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return systemTheme;
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const root = window.document.documentElement;
+    // 1. Add transition class so all elements animate smoothly
+    root.classList.add('theme-transition');
+    // 2. Toggle the dark class on next frame so transition is ready
+    requestAnimationFrame(() => {
+      setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    });
+    // 3. Remove the transition class after animation completes (300ms buffer)
+    setTimeout(() => {
+      root.classList.remove('theme-transition');
+    }, 350);
+  };
+
   useEffect(() => {
     localStorage.setItem('abujawad_erp_data', JSON.stringify(data));
   }, [data]);
@@ -136,7 +170,9 @@ export const DataProvider = ({ children }) => {
     updateItem,
     deleteItem,
     logActivity,
-    setData
+    setData,
+    theme,
+    toggleTheme
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

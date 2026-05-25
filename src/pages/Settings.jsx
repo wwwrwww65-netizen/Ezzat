@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Card, Button, Input, Select } from '../components/UI';
 import { useData } from '../context/DataContext';
-import { Save, Bell, Globe, Lock, Building } from 'lucide-react';
+import { Save, Bell, Globe, Lock, Building, Moon, Sun } from 'lucide-react';
 
 export default function Settings() {
-  const { logActivity } = useData();
+  const { logActivity, theme, toggleTheme } = useData();
   const [formData, setFormData] = useState({
     companyName: 'شركة أبو جواد للمقاولات',
     email: 'contact@abujawad.com',
@@ -22,8 +22,8 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">الإعدادات</h1>
-        <p className="text-sm text-gray-500">إدارة تفاصيل الشركة وإعدادات النظام</p>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-slate-100">الإعدادات</h1>
+        <p className="text-sm text-gray-500 dark:text-slate-400">إدارة تفاصيل الشركة وإعدادات النظام</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -64,12 +64,14 @@ export default function Settings() {
 
           <Card title="الأمان والخصوصية" subtitle="تغيير كلمة المرور وإعدادات الدخول">
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-100 rounded-lg"><Lock className="w-5 h-5 text-gray-600" /></div>
+                  <div className="p-2 bg-gray-100 dark:bg-slate-800 rounded-lg">
+                    <Lock className="w-5 h-5 text-gray-600 dark:text-slate-400" />
+                  </div>
                   <div>
-                    <p className="text-sm font-bold text-gray-800">كلمة المرور</p>
-                    <p className="text-xs text-gray-500">آخر تغيير منذ 3 أشهر</p>
+                    <p className="text-sm font-bold text-gray-800 dark:text-slate-200">كلمة المرور</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-500">آخر تغيير منذ 3 أشهر</p>
                   </div>
                 </div>
                 <Button variant="secondary" size="sm">تحديث</Button>
@@ -89,12 +91,31 @@ export default function Settings() {
               />
               <div className="pt-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">تفعيل الإشعارات</span>
-                  <input type="checkbox" defaultChecked className="h-4 w-4 text-primary-600 rounded" />
+                  <span className="text-sm text-gray-700 dark:text-slate-300">تفعيل الإشعارات</span>
+                  <input type="checkbox" defaultChecked className="h-4 w-4 text-primary-600 rounded dark:bg-slate-800 dark:border-slate-600" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">الوضع الليلي</span>
-                  <input type="checkbox" className="h-4 w-4 text-primary-600 rounded" />
+
+                {/* ===== الوضع الليلي — مربوط بالنظام الفعلي ===== */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2">
+                    {theme === 'dark'
+                      ? <Moon className="w-4 h-4 text-blue-400" />
+                      : <Sun className="w-4 h-4 text-amber-500" />
+                    }
+                    <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                      {theme === 'dark' ? 'الوضع الليلي مفعّل' : 'الوضع النهاري مفعّل'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={toggleTheme}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+                      theme === 'dark' ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                      theme === 'dark' ? '-translate-x-6' : '-translate-x-1'
+                    }`} />
+                  </button>
                 </div>
               </div>
             </div>

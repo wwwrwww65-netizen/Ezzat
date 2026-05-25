@@ -2,26 +2,293 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   DESIGN TOKENS — Single source of truth for the entire system
+   All colors, surfaces, and borders reference these variables.
+   Any new page automatically inherits the correct theme.
+   ============================================================ */
+:root {
+  /* Surfaces */
+  --color-bg-root:      #f8fafc;
+  --color-bg-surface:   #ffffff;
+  --color-bg-subtle:    #f9fafb;
+  --color-bg-hover:     #f1f5f9;
+
+  /* Borders */
+  --color-border:       #e2e8f0;
+  --color-border-light: #f1f5f9;
+
+  /* Text */
+  --color-text-primary: #1e293b;
+  --color-text-muted:   #64748b;
+  --color-text-subtle:  #94a3b8;
+
+  /* Brand */
+  --color-brand:        #1e3a8a;
+  --color-brand-hover:  #1e40af;
+  --color-brand-light:  rgba(30, 58, 138, 0.08);
+
+  /* Chart grid */
+  --color-chart-grid:   #f1f5f9;
+
+  /* Scrollbar */
+  --color-scrollbar:    #cbd5e1;
+
+  /* Transitions */
+  --transition-theme:   background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+.dark {
+  /* Surfaces */
+  --color-bg-root:      #0d1117;
+  --color-bg-surface:   #161b22;
+  --color-bg-subtle:    #1c2333;
+  --color-bg-hover:     #21262d;
+
+  /* Borders */
+  --color-border:       #30363d;
+  --color-border-light: #21262d;
+
+  /* Text */
+  --color-text-primary: #e6edf3;
+  --color-text-muted:   #b0bec7;   /* ↑ lighter — was #8b949e */
+  --color-text-subtle:  #8b9aab;   /* ↑ lighter — was #6e7681 */
+
+  /* Brand */
+  --color-brand:        #58a6ff;
+  --color-brand-hover:  #79c0ff;
+  --color-brand-light:  rgba(88, 166, 255, 0.12);
+
+  /* Chart grid */
+  --color-chart-grid:   #30363d;
+
+  /* Scrollbar */
+  --color-scrollbar:    #30363d;
+}
+
+/* ============================================================
+   BASE LAYER
+   ============================================================ */
 @layer base {
+  html {
+    transition: var(--transition-theme);
+  }
   body {
     @apply font-sans;
+    background-color: var(--color-bg-root);
+    color: var(--color-text-primary);
+    transition: var(--transition-theme);
   }
 }
 
-/* Custom Scrollbar for better RTL look */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+/* ============================================================
+   SMOOTH THEME TRANSITION
+   Applied temporarily (300ms) when theme is toggled.
+   Avoids permanently slowing down hover/animation effects.
+   ============================================================ */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    color 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    fill 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 280ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
+/* ============================================================
+   CUSTOM SCROLLBAR
+   ============================================================ */
+.custom-scrollbar::-webkit-scrollbar        { width: 5px; height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track  { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb  {
+  background: var(--color-scrollbar);
   border-radius: 10px;
 }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--color-text-subtle); }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
+/* ============================================================
+   GLOBAL THEME OVERRIDES
+   All existing classes are overridden here.
+   Future pages automatically inherit these rules.
+   ============================================================ */
+
+/* --- Main Backgrounds --- */
+.dark .bg-white                         { background-color: var(--color-bg-surface) !important; }
+.dark .bg-gray-50,
+.dark .bg-gray-50\/50,
+.dark .bg-slate-50                      { background-color: var(--color-bg-subtle) !important; }
+.dark .bg-\[\#f8fafc\]                  { background-color: var(--color-bg-root) !important; }
+.dark .bg-gray-100,
+.dark .bg-gray-100\/50                  { background-color: var(--color-bg-hover) !important; }
+
+/* --- Hover States --- */
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-gray-50\/50:hover,
+.dark .hover\:bg-white:hover            { background-color: var(--color-bg-hover) !important; }
+.dark .hover\:bg-primary-50:hover       { background-color: var(--color-brand-light) !important; }
+
+/* --- Text Colors --- */
+.dark .text-gray-900, .dark .text-slate-900,
+.dark .text-gray-800, .dark .text-slate-800  { color: var(--color-text-primary) !important; }
+.dark .text-gray-700, .dark .text-slate-700,
+.dark .text-gray-600, .dark .text-slate-600  { color: var(--color-text-muted) !important; }
+.dark .text-gray-500, .dark .text-slate-500,
+.dark .text-gray-400, .dark .text-slate-400  { color: var(--color-text-subtle) !important; }
+
+/* --- Brand Color Overrides --- */
+.dark .text-primary-600                 { color: var(--color-brand) !important; }
+.dark .hover\:text-primary-600:hover   { color: var(--color-brand-hover) !important; }
+.dark .bg-primary-50                    { background-color: var(--color-brand-light) !important; }
+.dark .text-primary-700                 { color: var(--color-brand-hover) !important; }
+
+/* --- Borders --- */
+.dark .border-gray-200, .dark .border-slate-200,
+.dark .border-gray-100, .dark .border-slate-100  { border-color: var(--color-border) !important; }
+.dark .border-gray-50                   { border-color: var(--color-border-light) !important; }
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-50  > :not([hidden]) ~ :not([hidden])  { border-color: var(--color-border-light) !important; }
+
+/* --- Inputs, Selects, Textareas --- */
+.dark input:not([type=range]),
+.dark select,
+.dark textarea {
+  background-color: var(--color-bg-subtle) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border) !important;
 }
+.dark input::placeholder,
+.dark textarea::placeholder             { color: var(--color-text-subtle) !important; }
+.dark select option                     { background-color: var(--color-bg-surface); color: var(--color-text-primary); }
+
+/* --- Notification / Alert Cards --- */
+.dark .bg-amber-50                      { background-color: rgba(180, 83, 9, 0.12) !important; }
+.dark .border-amber-100                 { border-color: rgba(180, 83, 9, 0.25) !important; }
+.dark .bg-amber-100                     { background-color: rgba(180, 83, 9, 0.2) !important; }
+.dark .text-amber-600, .dark .text-amber-700 { color: #fbbf24 !important; }
+.dark .bg-blue-50                       { background-color: rgba(29, 78, 216, 0.12) !important; }
+.dark .border-blue-100                  { border-color: rgba(29, 78, 216, 0.25) !important; }
+.dark .bg-blue-100                      { background-color: rgba(29, 78, 216, 0.2) !important; }
+.dark .text-blue-600, .dark .text-blue-700 { color: var(--color-brand) !important; }
+.dark .bg-emerald-50                    { background-color: rgba(5, 150, 105, 0.12) !important; }
+.dark .bg-emerald-100                   { background-color: rgba(5, 150, 105, 0.2) !important; }
+.dark .text-emerald-600, .dark .text-emerald-700 { color: #34d399 !important; }
+.dark .bg-red-50                        { background-color: rgba(220, 38, 38, 0.1) !important; }
+.dark .bg-red-100                       { background-color: rgba(220, 38, 38, 0.2) !important; }
+.dark .text-red-600, .dark .text-red-700 { color: #f87171 !important; }
+.dark .bg-purple-50                     { background-color: rgba(124, 58, 237, 0.12) !important; }
+.dark .text-purple-600                  { color: #a78bfa !important; }
+
+/* --- Progress bars --- */
+.dark .bg-gray-100.rounded-full         { background-color: var(--color-bg-hover) !important; }
+
+/* --- Recharts (charts) overrides --- */
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line { stroke: var(--color-chart-grid) !important; }
+.dark .recharts-legend-item-text        { color: var(--color-text-muted) !important; }
+.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: var(--color-bg-surface) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+}
+.dark .recharts-text                    { fill: var(--color-text-muted) !important; }
+
+/* --- Modals (backdrop) --- */
+.dark .bg-gray-900\/60                  { background-color: rgba(0, 0, 0, 0.75) !important; }
+
+/* --- Notification/Alert card text — must be clearly readable --- */
+.dark .bg-amber-50 .text-gray-800,
+.dark .bg-blue-50 .text-gray-800       { color: #e6edf3 !important; }
+
+.dark .bg-amber-50 .text-gray-600,
+.dark .bg-blue-50 .text-gray-600       { color: #b0bec7 !important; }
+
+.dark .bg-amber-50 .text-gray-400,
+.dark .bg-blue-50 .text-gray-400,
+.dark .bg-amber-50 p.text-\[10px\],
+.dark .bg-blue-50 p.text-\[10px\]      { color: #8b9aab !important; }
+
+/* --- Sidebar group label --- */
+.dark .text-gray-300                    { color: var(--color-text-subtle) !important; }
+
+/* --- Badge subtle backgrounds (keep slightly visible) --- */
+.dark .bg-gray-100.text-gray-700        { background-color: var(--color-bg-hover) !important; color: var(--color-text-muted) !important; }
+
+/* --- Gradient card (primary branded cards stay as-is) --- */
+.dark .bg-gradient-to-br               { /* gradient cards keep their brand colors */ }
+
+/* --- Decorative circles in Dashboard stat cards --- */
+.dark .bg-gray-50.rounded-full         { background-color: var(--color-bg-subtle) !important; }
+
+/* --- Login page specific --- */
+.dark .from-primary-600                { --tw-gradient-from: #1d4ed8; }
+.dark .to-primary-800                  { --tw-gradient-to: #1e3a8a; }
+
+/* ============================================================
+   TABLE ROW & CELL OVERRIDES
+   Covers raw <tr> <td> used in page files directly
+   ============================================================ */
+.dark tr { background-color: transparent; }
+.dark tr:hover { background-color: var(--color-bg-hover) !important; }
+.dark td, .dark th { color: var(--color-text-primary); border-color: var(--color-border-light) !important; }
+.dark .hover\:bg-gray-50:hover { background-color: var(--color-bg-hover) !important; }
+
+/* Card inner accent borders (e.g. border-r-4 border-r-emerald-500) stay colored */
+/* Inline search inputs in pages */
+.dark input[type="text"].bg-gray-50 {
+  background-color: var(--color-bg-subtle) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* --- dashed border cards --- */
+.dark .border-dashed.border-gray-100 { border-color: var(--color-border) !important; }
+
+/* --- Finance balance card bg --- */
+.dark .bg-gray-50.rounded-2xl { background-color: var(--color-bg-subtle) !important; }
+.dark .bg-white.rounded-xl.shadow-sm { background-color: var(--color-bg-hover) !important; }
+
+/* --- Settings / Users page form sections --- */
+.dark .bg-gray-50.border { background-color: var(--color-bg-subtle) !important; border-color: var(--color-border) !important; }
+.dark .bg-gray-100.rounded-full { background-color: var(--color-bg-hover) !important; }
+
+/* --- Recharts bar chart cursor --- */
+.dark .recharts-bar-rectangle { opacity: 0.9; }
+
+/* === Progress Bars === */
+.dark .bg-gray-100 { background-color: var(--color-bg-hover) !important; }
+
+/* === Textarea === */
+.dark textarea {
+  background-color: var(--color-bg-subtle) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* === Stat/KPI card decorative blob === */
+.dark .opacity-50.bg-gray-50 { background-color: var(--color-bg-subtle) !important; }
+
+/* ============================================================
+   NEW MODULES CUSTOM COLORS (BOQ, DailyLogs, Tasks Gantt)
+   ============================================================ */
+.dark .bg-indigo-50, .dark .bg-indigo-100 { background-color: rgba(79, 70, 229, 0.15) !important; }
+.dark .border-indigo-100 { border-color: rgba(79, 70, 229, 0.25) !important; }
+.dark .text-indigo-600, .dark .text-indigo-700, .dark .text-indigo-900 { color: #818cf8 !important; }
+
+.dark .bg-green-50, .dark .bg-green-100 { background-color: rgba(22, 163, 74, 0.15) !important; }
+.dark .border-green-100 { border-color: rgba(22, 163, 74, 0.25) !important; }
+.dark .text-green-600, .dark .text-green-700 { color: #4ade80 !important; }
+
+.dark .bg-gray-200, .dark .bg-gray-300 { background-color: var(--color-border) !important; }
+
+.dark .from-indigo-50 { --tw-gradient-from: rgba(79, 70, 229, 0.1) !important; }
+.dark .from-emerald-50 { --tw-gradient-from: rgba(16, 185, 129, 0.1) !important; }
+.dark .from-amber-50 { --tw-gradient-from: rgba(245, 158, 11, 0.1) !important; }
+.dark .from-green-50 { --tw-gradient-from: rgba(34, 197, 94, 0.1) !important; }
+.dark .from-red-50 { --tw-gradient-from: rgba(239, 68, 68, 0.1) !important; }
+
+.dark .to-white { --tw-gradient-to: var(--color-bg-surface) !important; }

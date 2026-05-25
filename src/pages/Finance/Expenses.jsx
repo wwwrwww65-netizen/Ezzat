@@ -3,6 +3,13 @@ import { Card, Table, Button, Modal, Input, Select } from '../../components/UI';
 import { useData } from '../../context/DataContext';
 import { Plus, Search, Trash2 } from 'lucide-react';
 
+const parseAmount = (val) => {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  const cleaned = String(val).replace(/[^0-9.]/g, '');
+  return parseFloat(cleaned) || 0;
+};
+
 export default function Expenses() {
   const { expenses, addItem, deleteItem } = useData();
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,7 +31,7 @@ export default function Expenses() {
     addItem('expenses', {
       ...formData,
       id: Date.now(),
-      amount: `${formData.amount} ر.س`
+      amount: parseFloat(formData.amount) || 0
     });
     setIsModalOpen(false);
   };
@@ -63,7 +70,7 @@ export default function Expenses() {
             <tr key={exp.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{exp.category}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exp.recipient}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">{exp.amount}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">{parseAmount(exp.amount).toLocaleString()} ر.س</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{exp.date}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm">
                 <button onClick={() => deleteItem('expenses', exp.id)} className="p-1 hover:text-red-600 transition-colors" title="حذف"><Trash2 className="w-4 h-4" /></button>

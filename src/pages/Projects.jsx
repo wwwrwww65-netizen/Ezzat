@@ -19,7 +19,8 @@ import {
   Building2,
   DollarSign,
   TrendingUp,
-  User
+  User,
+  Filter
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

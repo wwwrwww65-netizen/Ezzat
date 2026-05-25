@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Badge, Table, Button } from '../components/UI';
 import { useData } from '../context/DataContext';
+import { cn } from '../components/UI';
 import {
   TrendingUp,
   TrendingDown,
@@ -34,7 +35,13 @@ const chartData = [
 const COLORS = ['#1e3a8a', '#10b981', '#ef4444', '#f59e0b'];
 
 export default function Dashboard() {
-  const { projects, clients, invoices, expenses, income, tasks, notifications } = useData();
+  const { projects, clients, invoices, expenses, income, tasks, notifications, theme } = useData();
+  const isDark = theme === 'dark';
+  const chartGridColor = isDark ? '#30363d' : '#f1f5f9';
+  const chartTextColor = isDark ? '#8b949e' : '#64748b';
+  const tooltipStyle = isDark
+    ? { borderRadius: '16px', border: '1px solid #30363d', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', padding: '12px', backgroundColor: '#161b22', color: '#e6edf3' }
+    : { borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' };
 
   const totalIncome = (invoices?.filter(i => i.status === 'مدفوعة').reduce((acc, i) => acc + Number(i.total || 0), 0) || 0) +
                     (income?.filter(i => i.status === 'مؤكد').reduce((acc, i) => acc + Number(i.amount || 0), 0) || 0);
@@ -103,12 +110,10 @@ export default function Dashboard() {
                     <stop offset="95%" stopColor="#1e3a8a" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 'bold' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 'bold' }} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' }}
-                />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartGridColor} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: chartTextColor, fontWeight: 'bold' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: chartTextColor, fontWeight: 'bold' }} />
+                <Tooltip contentStyle={tooltipStyle} />
                 <Area type="monotone" dataKey="income" name="الدخل" stroke="#1e3a8a" strokeWidth={4} fillOpacity={1} fill="url(#colorIncome)" />
                 <Area type="monotone" dataKey="expense" name="المصروف" stroke="#ef4444" strokeWidth={4} fill="transparent" />
               </AreaChart>
@@ -198,6 +203,4 @@ function ActivityIcon({className}) {
   return <TrendingUp className={className} />;
 }
 
-function cn(...inputs) {
-  return inputs.filter(Boolean).join(' ');
-}
+
