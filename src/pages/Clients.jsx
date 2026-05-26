@@ -169,16 +169,10 @@ export default function Clients() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         title="إضافة عميل جديد"
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setShowAddModal(false)}>إلغاء</Button>
-            <Button variant="primary" onClick={handleAddClient}>حفظ البيانات</Button>
-          </div>
-        }
       >
-        <form className="space-y-4">
+        <form noValidate className="space-y-4" onSubmit={handleAddClient}>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="اسم العميل" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+            <Input label="اسم العميل" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
             <Select
               label="نوع العميل"
               options={[{label: 'فرد', value: 'فرد'}, {label: 'شركة', value: 'شركة'}]}
@@ -202,6 +196,11 @@ export default function Clients() {
             value={formData.notes}
             onChange={(e) => setFormData({...formData, notes: e.target.value})}
           ></textarea>
+          
+          <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+            <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>إلغاء</Button>
+            <Button variant="primary" type="submit">حفظ البيانات</Button>
+          </div>
         </form>
       </Modal>
 

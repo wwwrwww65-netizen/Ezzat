@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -53,6 +53,7 @@ const sidebarGroups = [
           { name: 'المخططات والملفات', href: '/files' },
           { name: 'جداول الكميات (BOQ)', href: '/boq' },
           { name: 'يوميات الموقع', href: '/daily-logs' },
+          { name: 'الحصر الرقمي', href: '/digital-takeoff' },
           { name: 'المهام', href: '/tasks' },
           { name: 'الطلبات والموافقات', href: '/requests' },
         ]
@@ -130,6 +131,22 @@ const sidebarGroups = [
 export default function Sidebar({ isOpen, setIsOpen }) {
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState({});
+  const [companyInfo, setCompanyInfo] = useState({ name: 'أبو جواد', logo: null });
+
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      if (window.electronAPI) {
+        const rows = await window.electronAPI.queryDb("SELECT * FROM settings WHERE key IN ('companyName', 'logoBase64')");
+        const info = { name: 'نظام إدارة المقاولات', logo: null };
+        rows.forEach(row => {
+          if (row.key === 'companyName' && row.value) info.name = row.value;
+          if (row.key === 'logoBase64' && row.value) info.logo = row.value;
+        });
+        setCompanyInfo(info);
+      }
+    };
+    fetchCompanyInfo();
+  }, [location.pathname]);
 
   const toggleGroup = (name) => {
     setOpenGroups(prev => ({
@@ -155,9 +172,13 @@ export default function Sidebar({ isOpen, setIsOpen }) {
         {/* Logo */}
         <div className="p-6 border-b border-gray-100 dark:border-slate-800/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary-200 dark:shadow-none">أ</div>
+            {companyInfo.logo ? (
+              <img src={companyInfo.logo} alt="Logo" className="w-10 h-10 rounded-lg object-contain bg-white shadow-lg shadow-primary-200 dark:shadow-none" />
+            ) : (
+              <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary-200 dark:shadow-none">أ</div>
+            )}
             <div>
-              <span className="text-xl font-bold text-gray-800 dark:text-slate-100">أبو جواد</span>
+              <span className="text-xl font-bold text-gray-800 dark:text-slate-100 truncate w-32 block">{companyInfo.name}</span>
               <p className="text-[10px] text-gray-400 dark:text-slate-500 font-medium">نظام إدارة مشاريع</p>
             </div>
           </div>
@@ -237,9 +258,16 @@ export default function Sidebar({ isOpen, setIsOpen }) {
           ))}
         </nav>
 
-        {/* Logout */}
         <div className="p-4 border-t border-gray-100 dark:border-slate-800/80">
-          <button className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200">
+          <button 
+            onClick={() => {
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('auth_user');
+              sessionStorage.removeItem('auth_token');
+              window.location.href = '/#/login';
+            }}
+            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200"
+          >
             <LogOut className="w-5 h-5" />
             <span>تسجيل الخروج</span>
           </button>

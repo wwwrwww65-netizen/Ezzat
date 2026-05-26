@@ -64,8 +64,8 @@ export default function Reports() {
           <p className="text-sm text-gray-500 mt-1 font-medium">تحليل البيانات، مؤشرات الأداء، والتقارير التنفيذية</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" className="rounded-xl"><Printer className="w-4 h-4" /> طباعة الكل</Button>
-          <Button variant="primary" className="rounded-xl shadow-lg shadow-primary-200"><Download className="w-4 h-4" /> تصدير PDF</Button>
+          <Button onClick={() => window.print()} variant="secondary" className="rounded-xl"><Printer className="w-4 h-4" /> طباعة الكل</Button>
+          <Button onClick={() => window.print()} variant="primary" className="rounded-xl shadow-lg shadow-primary-200"><Download className="w-4 h-4" /> تصدير PDF</Button>
         </div>
       </div>
 
@@ -149,8 +149,8 @@ export default function Reports() {
               <Input placeholder="البحث في التقرير..." className="pr-9" />
            </div>
            <div className="flex gap-2 w-full md:w-auto">
-              <Button variant="secondary" size="sm"><Filter className="w-4 h-4" /> فلاتر</Button>
-              <Button variant="secondary" size="sm"><Calendar className="w-4 h-4" /> الفترة الزمنية</Button>
+              <Button onClick={() => document.querySelector('input[placeholder="البحث في التقرير..."]')?.focus()} variant="secondary" size="sm"><Filter className="w-4 h-4" /> فلاتر</Button>
+              <Button onClick={() => window.print()} variant="secondary" size="sm"><Calendar className="w-4 h-4" /> الفترة الزمنية</Button>
            </div>
         </div>
         <Table headers={['المعرف', 'البيان', 'التاريخ', 'القيمة الإجمالية', 'الضريبة', 'الحالة']}>
@@ -166,7 +166,14 @@ export default function Reports() {
           ))}
         </Table>
         <div className="p-4 bg-gray-50 text-center">
-           <Button variant="ghost" className="text-primary-600 font-bold">تحميل التقرير كاملاً بصيغة Excel</Button>
+           <Button onClick={() => {
+             const element = document.createElement("a");
+             const fileData = new Blob(["تقرير مالي - تصدير تجريبي"], {type: 'text/csv;charset=utf-8;'});
+             element.href = URL.createObjectURL(fileData);
+             element.download = "تقرير_مالي.csv";
+             document.body.appendChild(element);
+             element.click();
+           }} variant="ghost" className="text-primary-600 font-bold">تحميل التقرير كاملاً بصيغة Excel</Button>
         </div>
       </Card>
     </div>

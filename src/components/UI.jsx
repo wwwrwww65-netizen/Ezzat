@@ -93,11 +93,14 @@ export const Modal = ({ isOpen, onClose, title, children, footer, className }) =
   );
 };
 
-export const Select = ({ label, options, error, className, ...props }) => {
+export const Select = ({ label, options, error, className, id, ...props }) => {
+  const generatedId = React.useId();
+  const selectId = id || generatedId;
   return (
     <div className="space-y-2 w-full">
-      {label && <label className="block text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">{label}</label>}
+      {label && <label htmlFor={selectId} className="block text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">{label}</label>}
       <select
+        id={selectId}
         className={cn(
           'block w-full px-4 py-3 border rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-2 bg-gray-50/50 border-transparent hover:bg-gray-100/50 dark:bg-slate-950/40 dark:border-slate-800 dark:hover:bg-slate-900/40',
           error
@@ -119,11 +122,14 @@ export const Select = ({ label, options, error, className, ...props }) => {
   );
 };
 
-export const Input = ({ className, label, error, ...props }) => {
+export const Input = ({ className, label, error, id, ...props }) => {
+  const generatedId = React.useId();
+  const inputId = id || generatedId;
   return (
     <div className="space-y-2 w-full">
-      {label && <label className="block text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">{label}</label>}
+      {label && <label htmlFor={inputId} className="block text-xs font-black text-gray-500 dark:text-slate-400 uppercase tracking-widest">{label}</label>}
       <input
+        id={inputId}
         className={cn(
           'block w-full px-4 py-3 border rounded-xl text-sm font-bold transition-all focus:outline-none focus:ring-2 bg-gray-50/50 border-transparent hover:bg-gray-100/50 placeholder-gray-400 dark:bg-slate-950/40 dark:border-slate-800 dark:hover:bg-slate-900/40 dark:placeholder-slate-500',
           error

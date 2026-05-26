@@ -28,7 +28,9 @@ import {
   Activity,
   Printer,
   FileSearch,
-  CheckSquare
+  CheckSquare,
+  Edit,
+  MoreVertical
 } from 'lucide-react';
 
 export default function ProjectDetails() {

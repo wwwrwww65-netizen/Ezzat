@@ -10,11 +10,38 @@ export default function DailyLogs() {
   const { projects } = useData();
   const [selectedProject, setSelectedProject] = useState(projects[0]?.id || '');
 
-  const [logs] = useState([
+  const [logs, setLogs] = useState([
     { id: 1, date: '2023-11-25', weather: 'مشمس', temp: '32°C', workers: 45, equipment: 8, progress: 'تم الانتهاء من صب خرسانة سقف الدور الأول، والبدء في أعمال مباني الدور الأرضي.', status: 'معتمد' },
     { id: 2, date: '2023-11-24', weather: 'غائم', temp: '28°C', workers: 42, equipment: 7, progress: 'تجهيز حديد تسليح سقف الدور الأول واستلام الاستشاري.', status: 'معتمد' },
     { id: 3, date: '2023-11-23', weather: 'ممطر', temp: '22°C', workers: 15, equipment: 2, progress: 'توقف العمل في الخارج بسبب الأمطار، العمل مقتصر على التجهيزات الداخلية.', status: 'معتمد' },
   ]);
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [selectedLog, setSelectedLog] = useState(null);
+  
+  const [formData, setFormData] = useState({ progress: '', workers: 0, equipment: 0, weather: 'مشمس', temp: '25°C' });
+
+  const handleAddLog = (e) => {
+    e.preventDefault();
+    const newLog = {
+      id: Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      weather: formData.weather,
+      temp: formData.temp,
+      workers: formData.workers,
+      equipment: formData.equipment,
+      progress: formData.progress,
+      status: 'قيد الاعتماد'
+    };
+    setLogs([newLog, ...logs]);
+    setShowAddModal(false);
+    setFormData({ progress: '', workers: 0, equipment: 0, weather: 'مشمس', temp: '25°C' });
+  };
+
+  const handleDeleteLog = (id) => {
+    setLogs(logs.filter(l => l.id !== id));
+  };
 
   const getWeatherIcon = (w) => {
     if (w === 'مشمس') return <Sun className="w-6 h-6 text-amber-500" />;
@@ -37,7 +64,7 @@ export default function DailyLogs() {
             options={projects.map(p => ({label: p.name, value: p.id}))} 
             className="w-64 border-primary-200"
           />
-          <Button variant="primary" className="rounded-xl shadow-lg shadow-primary-200">
+          <Button variant="primary" onClick={() => setShowAddModal(true)} className="rounded-xl shadow-lg shadow-primary-200">
             <Plus className="w-5 h-5 ml-2" /> كتابة تقرير يومي
           </Button>
         </div>
@@ -99,8 +126,11 @@ export default function DailyLogs() {
               <div className="p-6 flex-1 flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-bold text-gray-800">الأعمال المنجزة</h3>
-                    <Badge variant="success">معتمد من الاستشاري</Badge>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-gray-800">الأعمال المنجزة</h3>
+                      <button onClick={() => handleDeleteLog(log.id)} className="text-red-500 text-sm hover:underline">(حذف)</button>
+                    </div>
+                    <Badge variant={log.status === 'معتمد' ? 'success' : 'warning'}>{log.status}</Badge>
                   </div>
                   <p className="text-gray-600 leading-relaxed font-medium">{log.progress}</p>
                 </div>
@@ -116,14 +146,14 @@ export default function DailyLogs() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Camera className="w-5 h-5 text-primary-500" />
-                    <span className="font-bold text-primary-600 cursor-pointer hover:underline">عرض 4 صور مرفقة</span>
+                    <span onClick={() => { setSelectedLog(log); setShowGalleryModal(true); }} className="font-bold text-primary-600 cursor-pointer hover:underline">عرض 4 صور مرفقة</span>
                   </div>
                 </div>
               </div>
 
               {/* Action */}
               <div className="bg-white p-6 md:w-32 shrink-0 flex items-center justify-center border-r border-gray-100">
-                <Button variant="outline" className="rounded-full w-12 h-12 p-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button onClick={() => { setSelectedLog(log); setShowGalleryModal(true); }} variant="outline" className="rounded-full w-12 h-12 p-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <ChevronLeft className="w-6 h-6" />
                 </Button>
               </div>
@@ -131,6 +161,53 @@ export default function DailyLogs() {
           </Card>
         ))}
       </div>
+
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="كتابة تقرير يومي">
+        <form noValidate className="space-y-4" onSubmit={handleAddLog}>
+          <div className="grid grid-cols-2 gap-4">
+            <Select label="حالة الطقس" options={[{label:'مشمس',value:'مشمس'},{label:'غائم',value:'غائم'},{label:'ممطر',value:'ممطر'}]} value={formData.weather} onChange={e => setFormData({...formData, weather: e.target.value})} />
+            <Input label="درجة الحرارة" value={formData.temp} onChange={e => setFormData({...formData, temp: e.target.value})} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="عدد العمال والفنيين" type="number" value={formData.workers} onChange={e => setFormData({...formData, workers: e.target.value})} required />
+            <Input label="عدد المعدات العاملة" type="number" value={formData.equipment} onChange={e => setFormData({...formData, equipment: e.target.value})} required />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">تفاصيل الأعمال المنجزة</label>
+            <textarea className="w-full p-3 border border-gray-200 rounded-xl focus:border-primary-500 outline-none transition-colors" rows="4" value={formData.progress} onChange={e => setFormData({...formData, progress: e.target.value})} required />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)} className="rounded-xl">إلغاء</Button>
+            <Button variant="primary" type="submit" className="rounded-xl shadow-lg shadow-primary-200">حفظ التقرير</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Gallery / Details Modal */}
+      <Modal isOpen={showGalleryModal} onClose={() => { setShowGalleryModal(false); setSelectedLog(null); }} title={`تفاصيل تقرير يوم ${selectedLog?.date}`}>
+        <div className="space-y-6">
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+            <h4 className="font-bold text-gray-800 mb-2">الأعمال المنجزة:</h4>
+            <p className="text-gray-600">{selectedLog?.progress}</p>
+          </div>
+          
+          <div>
+            <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><Camera className="w-5 h-5 text-primary-500" /> الصور المرفقة بالموقع:</h4>
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 font-bold">
+                  صورة توثيقية {i}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+            <Button variant="secondary" onClick={() => { window.print(); }}>طباعة التقرير</Button>
+            <Button variant="primary" onClick={() => { setShowGalleryModal(false); setSelectedLog(null); }}>إغلاق</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

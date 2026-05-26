@@ -8,19 +8,39 @@ import {
 } from 'lucide-react';
 
 export default function Tasks() {
-  const { projects, employees } = useData();
+  const { projects, employees, tasks: contextTasks, addItem, deleteItem } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewMode, setViewMode] = useState('gantt'); // 'list' or 'gantt'
 
-  // Enhanced mock tasks for Gantt Chart
-  const [tasks] = useState([
+  // Ensure tasks array exists from context or use fallback
+  const tasks = contextTasks?.length ? contextTasks : [
     { id: 1, title: 'أعمال الحفر والأساسات', projectId: 1, assignedTo: 1, startDate: '2023-11-01', endDate: '2023-11-15', progress: 100, priority: 'عالية', status: 'مكتملة' },
-    { id: 2, title: 'صب القواعد الخرسانية', projectId: 1, assignedTo: 2, startDate: '2023-11-16', endDate: '2023-11-25', progress: 80, priority: 'عالية', status: 'قيد التنفيذ' },
-    { id: 3, title: 'أعمال العزل المائي', projectId: 1, assignedTo: 3, startDate: '2023-11-26', endDate: '2023-11-30', progress: 0, priority: 'متوسطة', status: 'لم تبدأ' },
-    { id: 4, title: 'أعمال مباني الدور الأرضي', projectId: 1, assignedTo: 1, startDate: '2023-12-01', endDate: '2023-12-20', progress: 0, priority: 'عالية', status: 'لم تبدأ' },
-    { id: 5, title: 'تجهيز المخططات التنفيذية', projectId: 2, assignedTo: 4, startDate: '2023-11-10', endDate: '2023-11-20', progress: 100, priority: 'عالية', status: 'مكتملة' },
-  ]);
+    { id: 2, title: 'صب القواعد الخرسانية', projectId: 1, assignedTo: 2, startDate: '2023-11-16', endDate: '2023-11-25', progress: 80, priority: 'عالية', status: 'قيد التنفيذ' }
+  ];
+
+  const [formData, setFormData] = useState({
+    title: '',
+    projectId: '',
+    assignedTo: '',
+    startDate: '',
+    endDate: '',
+    priority: 'عالية',
+    status: 'لم تبدأ',
+    progress: 0
+  });
+
+  const handleAddTask = (e) => {
+    e.preventDefault();
+    addItem('tasks', {
+      ...formData,
+      id: Date.now(),
+      projectId: Number(formData.projectId) || null,
+      assignedTo: Number(formData.assignedTo) || null
+    });
+    setShowAddModal(false);
+    setFormData({ title: '', projectId: '', assignedTo: '', startDate: '', endDate: '', priority: 'عالية', status: 'لم تبدأ', progress: 0 });
+  };
 
   const filteredTasks = tasks.filter(task =>
     task.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -155,7 +175,7 @@ export default function Tasks() {
                       <Badge variant={task.status === 'قيد التنفيذ' ? 'warning' : task.status === 'مكتملة' ? 'success' : 'neutral'}>{task.status}</Badge>
                     </td>
                     <td className="px-6 py-4">
-                      <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => deleteItem('tasks', task.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </td>
                   </tr>
                 ))}
@@ -239,24 +259,24 @@ export default function Tasks() {
 
       {/* Add Task Modal */}
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة مهمة للجدول الزمني">
-         <form className="space-y-4">
-            <Input label="عنوان المهمة" required />
-            <Select label="ربط بالمشروع" options={projects.map(p => ({ label: p.name, value: p.id }))} />
+         <form noValidate className="space-y-4" onSubmit={handleAddTask}>
+            <Input label="عنوان المهمة" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
+            <Select label="ربط بالمشروع" options={projects.map(p => ({ label: p.name, value: p.id }))} value={formData.projectId} onChange={e => setFormData({...formData, projectId: e.target.value})} />
             <div className="grid grid-cols-2 gap-4">
-               <Select label="المهندس/المسؤول" options={employees.map(e => ({ label: e.name, value: e.id }))} />
-               <Select label="يعتمد على مهمة (Predecessor)" options={[{label: 'بدون ارتباط', value: null}, ...tasks.map(t => ({ label: t.title, value: t.id }))]} />
+               <Select label="المهندس/المسؤول" options={employees.map(e => ({ label: e.name, value: e.id }))} value={formData.assignedTo} onChange={e => setFormData({...formData, assignedTo: e.target.value})} />
+               <Select label="يعتمد على مهمة (Predecessor)" options={[{label: 'بدون ارتباط', value: ''}, ...tasks.map(t => ({ label: t.title, value: t.id }))]} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-               <Input label="تاريخ البدء" type="date" required />
-               <Input label="تاريخ الانتهاء المتوقع" type="date" required />
+               <Input label="تاريخ البدء" type="date" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} required />
+               <Input label="تاريخ الانتهاء المتوقع" type="date" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} required />
             </div>
             <div className="grid grid-cols-2 gap-4">
-               <Select label="الأولوية" options={[{label: 'عالية', value: 'عالية'}, {label: 'متوسطة', value: 'متوسطة'}, {label: 'منخفضة', value: 'منخفضة'}]} />
-               <Select label="الحالة" options={[{label: 'لم تبدأ', value: 'لم تبدأ'}, {label: 'قيد التنفيذ', value: 'قيد التنفيذ'}]} />
+               <Select label="الأولوية" options={[{label: 'عالية', value: 'عالية'}, {label: 'متوسطة', value: 'متوسطة'}, {label: 'منخفضة', value: 'منخفضة'}]} value={formData.priority} onChange={e => setFormData({...formData, priority: e.target.value})} />
+               <Select label="الحالة" options={[{label: 'لم تبدأ', value: 'لم تبدأ'}, {label: 'قيد التنفيذ', value: 'قيد التنفيذ'}]} value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} />
             </div>
             <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
-               <Button variant="secondary" onClick={() => setShowAddModal(false)} className="rounded-xl">إلغاء</Button>
-               <Button variant="primary" className="rounded-xl shadow-lg shadow-primary-200">حفظ في الجدول الزمني</Button>
+               <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)} className="rounded-xl">إلغاء</Button>
+               <Button variant="primary" type="submit" className="rounded-xl shadow-lg shadow-primary-200">حفظ في الجدول الزمني</Button>
             </div>
          </form>
       </Modal>

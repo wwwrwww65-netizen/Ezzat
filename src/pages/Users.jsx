@@ -75,7 +75,7 @@ export default function Users() {
                    onChange={e => setSearchTerm(e.target.value)}
                  />
               </div>
-              <Button variant="secondary" className="rounded-xl"><ShieldAlert className="w-4 h-4" /> الصلاحيات</Button>
+              <Button onClick={() => setShowAddModal(true)} variant="secondary" className="rounded-xl" title="إدارة الصلاحيات"><ShieldAlert className="w-4 h-4" /> الصلاحيات</Button>
            </div>
 
            <Table headers={['المستخدم', 'الدور', 'الحالة', 'آخر ظهور', 'إجراءات']}>
@@ -112,8 +112,8 @@ export default function Users() {
         </Card>
       </div>
 
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة مستخدم جديد">
-         <form className="space-y-4">
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إدارة المستخدمين والصلاحيات">
+         <form noValidate className="space-y-4" onSubmit={(e) => { e.preventDefault(); setShowAddModal(false); }}>
             <Input label="الاسم الكامل" required />
             <Input label="البريد الإلكتروني" type="email" required />
             <div className="grid grid-cols-2 gap-4">
@@ -140,8 +140,8 @@ export default function Users() {
                </label>
             </div>
             <div className="flex justify-end gap-2 pt-4">
-               <Button variant="secondary" onClick={() => setShowAddModal(false)}>إلغاء</Button>
-               <Button variant="primary">حفظ المستخدم</Button>
+               <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>إلغاء</Button>
+               <Button variant="primary" type="submit">حفظ التعديلات</Button>
             </div>
          </form>
       </Modal>

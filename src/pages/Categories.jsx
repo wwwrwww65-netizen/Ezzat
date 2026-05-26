@@ -54,7 +54,7 @@ export default function Categories() {
       </div>
 
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة فئة جديدة">
-         <form className="space-y-4">
+         <form noValidate className="space-y-4">
             <Input label="اسم الفئة" required />
             <div className="grid grid-cols-2 gap-4">
                <Input label="كود الفئة (مثلاً: CEM)" />

@@ -24,6 +24,9 @@ import {
   BarChart, Bar, Legend, Cell, PieChart, Pie
 } from 'recharts';
 import { Link } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/database';
+import { Calculator } from 'lucide-react';
 
 const chartData = [
   { name: 'الأسبوع 1', income: 45000, expense: 32000 },
@@ -48,11 +51,14 @@ export default function Dashboard() {
 
   const totalExpenses = (expenses?.reduce((acc, e) => acc + Number(e.amount || 0), 0) || 0);
 
+  const measurements = useLiveQuery(() => db.takeoff_measurements.toArray(), []);
+  const takeoffTotal = measurements?.reduce((acc, m) => acc + (m.estimated_cost || 0), 0) || 0;
+
   const stats = [
     { label: 'إجمالي المشاريع', value: projects.length, trend: '+2', trendType: 'up', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'المشاريع النشطة', value: projects.filter(p => p.status === 'نشط').length, trend: '0', trendType: 'neutral', icon: ActivityIcon, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'إجمالي العملاء', value: clients.length, trend: '+12', trendType: 'up', icon: Users, color: 'text-purple-600', bg: 'bg-purple-50' },
     { label: 'صافي الربح', value: `${(totalIncome - totalExpenses).toLocaleString()} ر.س`, trend: '+15%', trendType: 'up', icon: Wallet, color: 'text-primary-600', bg: 'bg-primary-50' },
+    { label: 'تكلفة الحصر الرقمي', value: `${takeoffTotal.toLocaleString()} ر.س`, trend: `${measurements?.length || 0} قياسات`, trendType: 'neutral', icon: Calculator, color: 'text-indigo-600', bg: 'bg-indigo-50' },
   ];
 
   return (
@@ -64,7 +70,7 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-2">
            <Button variant="secondary" className="rounded-xl"><Calendar className="w-4 h-4" /> الفترة: الشهر الحالي</Button>
-           <Button variant="primary" className="rounded-xl shadow-lg shadow-primary-200">تحديث البيانات</Button>
+           <Button onClick={() => window.location.reload()} variant="primary" className="rounded-xl shadow-lg shadow-primary-200">تحديث البيانات</Button>
         </div>
       </div>
 
@@ -141,7 +147,9 @@ export default function Dashboard() {
                    </div>
                 </div>
               ))}
-              <Button variant="ghost" className="w-full text-primary-600 font-bold text-sm">عرض كافة الإشعارات <ChevronRight className="w-4 h-4" /></Button>
+              <Link to="/reports">
+                <Button variant="ghost" className="w-full text-primary-600 font-bold text-sm">عرض كافة الإشعارات <ChevronRight className="w-4 h-4" /></Button>
+              </Link>
            </div>
         </Card>
       </div>

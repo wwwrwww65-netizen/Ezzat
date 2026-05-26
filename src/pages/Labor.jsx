@@ -21,6 +21,29 @@ export default function Labor() {
   const { employees, projects, addItem, deleteItem } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    profession: '',
+    nationality: '',
+    dailyRate: 0,
+    projectId: '',
+    idNumber: '',
+    status: 'على رأس العمل',
+    role: 'labor'
+  });
+
+  const handleAddLabor = (e) => {
+    e.preventDefault();
+    addItem('employees', {
+      ...formData,
+      id: Date.now(),
+      projectId: Number(formData.projectId) || null
+    });
+    setShowAddModal(false);
+    setFormData({
+      name: '', profession: '', nationality: '', dailyRate: 0, projectId: '', idNumber: '', status: 'على رأس العمل', role: 'labor'
+    });
+  };
 
   const laborOnly = employees.filter(e => e.role === 'labor' || e.role === 'supervisor');
 
@@ -39,7 +62,7 @@ export default function Labor() {
            <Button onClick={() => setShowAddModal(true)} variant="primary" className="rounded-xl shadow-lg shadow-primary-200">
              <Plus className="w-4 h-4" /> إضافة عامل
            </Button>
-           <Button variant="secondary" className="rounded-xl"><Printer className="w-4 h-4" /></Button>
+           <Button onClick={() => window.print()} variant="secondary" className="rounded-xl" title="طباعة الكشف"><Printer className="w-4 h-4" /></Button>
         </div>
       </div>
 
@@ -80,7 +103,10 @@ export default function Labor() {
            </div>
            <div className="flex gap-2">
               <Select options={[{label: 'بناء', value: 'بناء'}, {label: 'حداد', value: 'حداد'}]} className="w-32" />
-              <Button variant="secondary" size="sm" className="rounded-xl"><Filter className="w-4 h-4" /></Button>
+              <Button onClick={() => {
+                const searchInput = document.querySelector('input[placeholder="البحث بالاسم أو المهنة..."]');
+                if (searchInput) searchInput.focus();
+              }} variant="secondary" size="sm" className="rounded-xl"><Filter className="w-4 h-4" /></Button>
            </div>
         </div>
 
@@ -110,9 +136,21 @@ export default function Labor() {
                 </td>
                 <td className="px-6 py-4">
                    <div className="flex gap-2">
-                      <button className="p-1.5 text-gray-400 hover:text-primary-600 transition-colors"><Calendar className="w-4 h-4" /></button>
-                      <button className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"><Edit className="w-4 h-4" /></button>
-                      <button onClick={() => deleteItem('employees', emp.id)} className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => window.print()} className="p-1.5 text-gray-400 hover:text-primary-600 transition-colors" title="سجل الحضور"><Calendar className="w-4 h-4" /></button>
+                      <button onClick={() => {
+                        setFormData({
+                          name: emp.name,
+                          profession: emp.profession || '',
+                          nationality: emp.nationality || '',
+                          dailyRate: emp.dailyRate || 0,
+                          projectId: emp.projectId || '',
+                          idNumber: emp.idNumber || '',
+                          status: emp.status || 'على رأس العمل',
+                          role: emp.role || 'labor'
+                        });
+                        setShowAddModal(true);
+                      }} className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors" title="تعديل بيانات العامل"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => deleteItem('employees', emp.id)} className="p-1.5 text-gray-400 hover:text-red-600 transition-colors" title="حذف العامل"><Trash2 className="w-4 h-4" /></button>
                    </div>
                 </td>
              </tr>
@@ -121,20 +159,20 @@ export default function Labor() {
       </Card>
 
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة عامل جديد">
-         <form className="space-y-4">
-            <Input label="الاسم الكامل" required />
+         <form noValidate className="space-y-4" onSubmit={handleAddLabor}>
+            <Input label="الاسم الكامل" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
             <div className="grid grid-cols-2 gap-4">
-               <Input label="المهنة" placeholder="مثلاً: بناء، سباك" />
-               <Input label="الجنسية" />
+               <Input label="المهنة" placeholder="مثلاً: بناء، سباك" value={formData.profession} onChange={e => setFormData({...formData, profession: e.target.value})} required />
+               <Input label="الجنسية" value={formData.nationality} onChange={e => setFormData({...formData, nationality: e.target.value})} required />
             </div>
             <div className="grid grid-cols-2 gap-4">
-               <Input label="الأجر اليومي" type="number" />
-               <Select label="المشروع الحالي" options={projects.map(p => ({ label: p.name, value: p.id }))} />
+               <Input label="الأجر اليومي" type="number" value={formData.dailyRate} onChange={e => setFormData({...formData, dailyRate: e.target.value})} required />
+               <Select label="المشروع الحالي" options={projects.map(p => ({ label: p.name, value: p.id }))} value={formData.projectId} onChange={e => setFormData({...formData, projectId: e.target.value})} />
             </div>
-            <Input label="رقم الهوية / الإقامة" />
+            <Input label="رقم الهوية / الإقامة" value={formData.idNumber} onChange={e => setFormData({...formData, idNumber: e.target.value})} required />
             <div className="flex justify-end gap-2 pt-4 border-t border-gray-50">
-               <Button variant="secondary" onClick={() => setShowAddModal(false)}>إلغاء</Button>
-               <Button variant="primary">حفظ البيانات</Button>
+               <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>إلغاء</Button>
+               <Button variant="primary" type="submit">حفظ البيانات</Button>
             </div>
          </form>
       </Modal>

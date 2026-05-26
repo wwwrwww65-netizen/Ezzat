@@ -111,6 +111,32 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--color-text-subtle); }
 
 /* ============================================================
+   PRINT STYLES
+   ============================================================ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-friendly-container, .print-friendly-container * {
+    visibility: visible;
+  }
+  
+  .print-friendly-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ============================================================
    GLOBAL THEME OVERRIDES
    All existing classes are overridden here.
    Future pages automatically inherit these rules.
@@ -219,7 +245,6 @@
 .dark .bg-gray-100.text-gray-700        { background-color: var(--color-bg-hover) !important; color: var(--color-text-muted) !important; }
 
 /* --- Gradient card (primary branded cards stay as-is) --- */
-.dark .bg-gradient-to-br               { /* gradient cards keep their brand colors */ }
 
 /* --- Decorative circles in Dashboard stat cards --- */
 .dark .bg-gray-50.rounded-full         { background-color: var(--color-bg-subtle) !important; }

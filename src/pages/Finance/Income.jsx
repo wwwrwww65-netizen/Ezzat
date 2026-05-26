@@ -137,7 +137,7 @@ export default function Income() {
           </div>
         }
       >
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form noValidate className="space-y-4" onSubmit={handleSubmit}>
           <Input
             label="البيان / المشروع"
             value={formData.title}

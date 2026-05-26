@@ -20,6 +20,13 @@ import {
 export default function ClientPanel() {
   const { clients, projects } = useData();
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Modal states
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [showStatementModal, setShowStatementModal] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
 
   // For demonstration, we assume the logged-in client is the first client
   const currentClient = clients[0] || { name: 'شركة الأفق للمقاولات', email: 'info@horizon.com', phone: '0501234567' };
@@ -53,8 +60,8 @@ export default function ClientPanel() {
           </div>
         </div>
         <div className="relative z-10 flex gap-3">
-          <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">تحديث البيانات</Button>
-          <Button className="bg-white text-primary-900 hover:bg-primary-50">تواصل مع الدعم</Button>
+          <Button variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={() => setShowUpdateModal(true)}>تحديث البيانات</Button>
+          <Button className="bg-white text-primary-900 hover:bg-primary-50" onClick={() => setShowSupportModal(true)}>تواصل مع الدعم</Button>
         </div>
       </div>
 
@@ -112,7 +119,7 @@ export default function ClientPanel() {
               <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                 <Camera className="w-5 h-5 text-primary-500" /> آخر صور الموقع
               </h3>
-              <Button variant="secondary" size="sm">عرض الكل</Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowGalleryModal(true)}>عرض الكل</Button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((img) => (
@@ -121,7 +128,7 @@ export default function ClientPanel() {
                   {/* Placeholder for real images */}
                   <div className="absolute inset-0 flex items-center justify-center text-gray-400 font-medium">صورة الموقع {img}</div>
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Button variant="primary" size="sm" className="rounded-full w-10 h-10 p-0 flex items-center justify-center"><Download className="w-4 h-4" /></Button>
+                    <Button variant="primary" size="sm" className="rounded-full w-10 h-10 p-0 flex items-center justify-center" onClick={() => setShowGalleryModal(true)}><Camera className="w-4 h-4" /></Button>
                   </div>
                 </div>
               ))}
@@ -158,18 +165,85 @@ export default function ClientPanel() {
                 </div>
               ))}
             </div>
-            <Button variant="outline" className="w-full mt-4">عرض كشف الحساب بالكامل</Button>
+            <Button variant="outline" className="w-full mt-4" onClick={() => setShowStatementModal(true)}>عرض كشف الحساب بالكامل</Button>
           </Card>
 
           <Card className="p-6 bg-primary-900 text-white border-none relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4"></div>
             <h3 className="text-lg font-bold mb-2 relative z-10">هل لديك استفسار أو طلب تعديل؟</h3>
             <p className="text-sm text-primary-200 mb-6 relative z-10">يمكنك إرسال طلبات التعديل الهندسي أو الاستفسارات مباشرة إلى مدير المشروع.</p>
-            <Button className="w-full bg-white text-primary-900 hover:bg-primary-50 relative z-10">إرسال طلب جديد</Button>
+            <Button className="w-full bg-white text-primary-900 hover:bg-primary-50 relative z-10" onClick={() => setShowRequestModal(true)}>إرسال طلب جديد</Button>
           </Card>
         </div>
 
       </div>
+
+      {/* Modals */}
+      <Modal isOpen={showUpdateModal} onClose={() => setShowUpdateModal(false)} title="تحديث بيانات العميل">
+        <div className="space-y-4">
+          <Input label="اسم الشركة / العميل" defaultValue={currentClient.name} />
+          <Input label="البريد الإلكتروني" defaultValue={currentClient.email} />
+          <Input label="رقم الجوال" defaultValue={currentClient.phone} />
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="secondary" onClick={() => setShowUpdateModal(false)}>إلغاء</Button>
+            <Button variant="primary" onClick={() => setShowUpdateModal(false)}>حفظ التحديثات</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} title="تواصل مع الدعم الفني">
+        <div className="space-y-4">
+          <Select label="نوع المشكلة" options={[{label:'استفسار مالي', value:'1'}, {label:'مشكلة فنية', value:'2'}]} />
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">تفاصيل الرسالة</label>
+            <textarea className="w-full p-3 border border-gray-200 rounded-xl" rows="4"></textarea>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="secondary" onClick={() => setShowSupportModal(false)}>إلغاء</Button>
+            <Button variant="primary" onClick={() => setShowSupportModal(false)}>إرسال للدعم</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showGalleryModal} onClose={() => setShowGalleryModal(false)} title="معرض صور الموقع">
+        <div className="grid grid-cols-2 gap-4">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="aspect-video bg-gray-200 rounded-xl flex items-center justify-center text-gray-500 font-bold">
+              صورة الموقع {i}
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button variant="secondary" onClick={() => setShowGalleryModal(false)}>إغلاق</Button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showStatementModal} onClose={() => setShowStatementModal(false)} title="كشف الحساب المفصل">
+        <div className="space-y-4">
+          <div className="bg-gray-50 p-4 rounded-xl text-center">
+            <h3 className="font-bold text-gray-800">إجمالي المستحقات: {activeProject?.contractValue?.toLocaleString()} ر.س</h3>
+            <p className="text-gray-500 text-sm">المدفوع: {activeProject?.paid?.toLocaleString()} ر.س</p>
+          </div>
+          <div className="flex justify-center gap-3">
+            <Button variant="primary" onClick={() => { window.print(); setShowStatementModal(false); }}>طباعة (PDF)</Button>
+            <Button variant="secondary" onClick={() => setShowStatementModal(false)}>إغلاق</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showRequestModal} onClose={() => setShowRequestModal(false)} title="إرسال طلب جديد للإدارة">
+        <div className="space-y-4">
+          <Input label="عنوان الطلب" placeholder="مثال: طلب تعديل مخطط الواجهة" />
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">تفاصيل الطلب</label>
+            <textarea className="w-full p-3 border border-gray-200 rounded-xl" rows="4"></textarea>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="secondary" onClick={() => setShowRequestModal(false)}>إلغاء</Button>
+            <Button variant="primary" onClick={() => setShowRequestModal(false)}>إرسال الطلب</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

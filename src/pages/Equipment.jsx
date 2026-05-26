@@ -21,6 +21,30 @@ export default function Equipment() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
 
+  const [formData, setFormData] = useState({
+    name: '',
+    type: '',
+    serialNumber: '',
+    dailyCost: 0,
+    monthlyCost: 0,
+    lastMaintenance: '',
+    projectId: '',
+    status: 'متوفر'
+  });
+
+  const handleAddEquipment = (e) => {
+    e.preventDefault();
+    addItem('equipment', {
+      ...formData,
+      id: Date.now(),
+      projectId: Number(formData.projectId) || null
+    });
+    setShowAddModal(false);
+    setFormData({
+      name: '', type: '', serialNumber: '', dailyCost: 0, monthlyCost: 0, lastMaintenance: '', projectId: '', status: 'متوفر'
+    });
+  };
+
   const filteredEquipment = equipment.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -36,7 +60,7 @@ export default function Equipment() {
            <Button onClick={() => setShowAddModal(true)} variant="primary" className="rounded-xl shadow-lg shadow-primary-200">
              <Plus className="w-4 h-4" /> إضافة معدة
            </Button>
-           <Button variant="secondary" className="rounded-xl"><History className="w-4 h-4" /> سجل الصيانة</Button>
+           <Button onClick={() => window.print()} variant="secondary" className="rounded-xl" title="طباعة السجل"><History className="w-4 h-4" /> سجل الصيانة</Button>
         </div>
       </div>
 
@@ -83,7 +107,10 @@ export default function Equipment() {
               />
            </div>
            <div className="flex gap-2">
-              <Button variant="secondary" size="sm" className="rounded-xl"><Settings className="w-4 h-4" /></Button>
+              <Button onClick={() => {
+                const searchInput = document.querySelector('input[placeholder="البحث باسم المعدة أو الرقم التسلسلي..."]');
+                if (searchInput) searchInput.focus();
+              }} variant="secondary" size="sm" className="rounded-xl" title="تصفية متقدمة"><Settings className="w-4 h-4" /></Button>
            </div>
         </div>
 
@@ -111,8 +138,20 @@ export default function Equipment() {
                 </td>
                 <td className="px-6 py-4 text-gray-400">
                    <div className="flex gap-2">
-                      <button className="p-1.5 hover:text-primary-600 transition-colors"><Wrench className="w-4 h-4" /></button>
-                      <button className="p-1.5 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => {
+                        setFormData({
+                          name: item.name,
+                          type: item.type || '',
+                          serialNumber: item.serialNumber || '',
+                          dailyCost: item.dailyCost || 0,
+                          monthlyCost: item.monthlyCost || 0,
+                          lastMaintenance: item.lastMaintenance || '',
+                          projectId: item.projectId || '',
+                          status: item.status || 'متوفر'
+                        });
+                        setShowAddModal(true);
+                      }} className="p-1.5 text-gray-400 hover:text-primary-600 transition-colors" title="صيانة وتعديل"><Wrench className="w-4 h-4" /></button>
+                      <button onClick={() => deleteItem('equipment', item.id)} className="p-1.5 text-gray-400 hover:text-red-600 transition-colors" title="حذف"><Trash2 className="w-4 h-4" /></button>
                    </div>
                 </td>
              </tr>
@@ -121,23 +160,23 @@ export default function Equipment() {
       </Card>
 
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة معدة جديدة للأسطول">
-         <form className="space-y-4">
-            <Input label="اسم المعدة" required />
+         <form noValidate className="space-y-4" onSubmit={handleAddEquipment}>
+            <Input label="اسم المعدة" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
             <div className="grid grid-cols-2 gap-4">
-               <Input label="النوع" placeholder="مثلاً: رافعة، جرافة" />
-               <Input label="الرقم التسلسلي" />
+               <Input label="النوع" placeholder="مثلاً: رافعة، جرافة" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} />
+               <Input label="الرقم التسلسلي" value={formData.serialNumber} onChange={e => setFormData({...formData, serialNumber: e.target.value})} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-               <Input label="التكلفة اليومية" type="number" />
-               <Input label="التكلفة الشهرية" type="number" />
+               <Input label="التكلفة اليومية" type="number" value={formData.dailyCost} onChange={e => setFormData({...formData, dailyCost: e.target.value})} />
+               <Input label="التكلفة الشهرية" type="number" value={formData.monthlyCost} onChange={e => setFormData({...formData, monthlyCost: e.target.value})} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-               <Input label="تاريخ آخر صيانة" type="date" />
-               <Select label="الموقع الحالي" options={projects.map(p => ({ label: p.name, value: p.id }))} />
+               <Input label="تاريخ آخر صيانة" type="date" value={formData.lastMaintenance} onChange={e => setFormData({...formData, lastMaintenance: e.target.value})} />
+               <Select label="الموقع الحالي" options={projects.map(p => ({ label: p.name, value: p.id }))} value={formData.projectId} onChange={e => setFormData({...formData, projectId: e.target.value})} />
             </div>
             <div className="flex justify-end gap-2 pt-4 border-t border-gray-50">
-               <Button variant="secondary" onClick={() => setShowAddModal(false)}>إلغاء</Button>
-               <Button variant="primary">حفظ المعدة</Button>
+               <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>إلغاء</Button>
+               <Button variant="primary" type="submit">حفظ المعدة</Button>
             </div>
          </form>
       </Modal>

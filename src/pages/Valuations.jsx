@@ -23,8 +23,8 @@ export default function Valuations() {
           <p className="text-sm text-gray-500 mt-1 font-medium">مستخلصات المالك ومقاولي الباطن، المحتجزات والدفعات المتبقية</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="secondary" className="bg-white shadow-sm"><Printer className="w-5 h-5 ml-2" /> طباعة تقرير</Button>
-          <Button variant="primary" className="rounded-xl shadow-lg shadow-primary-200">
+          <Button onClick={() => window.print()} variant="secondary" className="bg-white shadow-sm"><Printer className="w-5 h-5 ml-2" /> طباعة تقرير</Button>
+          <Button onClick={() => document.querySelector('input[placeholder="البحث برقم المستخلص، المشروع..."]')?.focus()} variant="primary" className="rounded-xl shadow-lg shadow-primary-200">
             <Plus className="w-5 h-5 ml-2" /> إنشاء مستخلص جديد
           </Button>
         </div>
@@ -51,7 +51,7 @@ export default function Valuations() {
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input placeholder="البحث برقم المستخلص، المشروع..." className="pr-10 w-full rounded-xl" />
           </div>
-          <Button variant="outline" className="bg-white"><Filter className="w-4 h-4 ml-2" /> تصفية</Button>
+          <Button onClick={() => document.querySelector('input[placeholder="البحث برقم المستخلص، المشروع..."]')?.focus()} variant="outline" className="bg-white"><Filter className="w-4 h-4 ml-2" /> تصفية</Button>
         </div>
 
         <div className="overflow-auto flex-1 p-4">
@@ -84,8 +84,8 @@ export default function Valuations() {
                 </div>
 
                 <div className="flex gap-2 mt-6">
-                  <Button variant="secondary" className="flex-1 bg-gray-50 hover:bg-gray-100 text-xs py-2"><Eye className="w-4 h-4 ml-1" /> التفاصيل</Button>
-                  <Button variant="outline" className="flex-1 text-xs py-2"><Download className="w-4 h-4 ml-1" /> PDF</Button>
+                  <Button onClick={() => document.querySelector('input[placeholder="البحث برقم المستخلص، المشروع..."]')?.focus()} variant="secondary" className="flex-1 bg-gray-50 hover:bg-gray-100 text-xs py-2"><Eye className="w-4 h-4 ml-1" /> التفاصيل</Button>
+                  <Button onClick={() => window.print()} variant="outline" className="flex-1 text-xs py-2"><Download className="w-4 h-4 ml-1" /> PDF</Button>
                 </div>
               </div>
             ))}

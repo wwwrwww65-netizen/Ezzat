@@ -16,22 +16,114 @@ import {
   Percent
 } from 'lucide-react';
 
+import { extractTextFromImage, parseTextToBOQTable } from '../services/ocrService';
+import { Camera, Loader2 } from 'lucide-react';
+
 export default function BOQ() {
   const { projects } = useData();
-  const [selectedProject, setSelectedProject] = useState(projects[0]?.id || '');
+  const [selectedProject, setSelectedProject] = useState(projects && projects[0] ? projects[0].id : '');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const [isOcrProcessing, setIsOcrProcessing] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [materialsCatalog, setMaterialsCatalog] = useState([]);
+  const [boqItems, setBoqItems] = useState([]);
 
-  // Mock BOQ Data
-  const [boqItems, setBoqItems] = useState([
-    { id: '1.0', description: 'الأعمال الترابية والأساسات', unit: '-', qty: 0, estRate: 0, actRate: 0, isHeader: true },
-    { id: '1.1', description: 'حفر لزوم القواعد والأساسات', unit: 'م3', qty: 1500, estRate: 35, actRate: 40, isHeader: false },
-    { id: '1.2', description: 'ردميات بتربة موردة ونظيفة', unit: 'م3', qty: 800, estRate: 25, actRate: 22, isHeader: false },
-    { id: '2.0', description: 'الأعمال الخرسانية', unit: '-', qty: 0, estRate: 0, actRate: 0, isHeader: true },
-    { id: '2.1', description: 'خرسانة عادية صب صنف (C20)', unit: 'م3', qty: 250, estRate: 250, actRate: 260, isHeader: false },
-    { id: '2.2', description: 'خرسانة مسلحة صب صنف (C35)', unit: 'م3', qty: 1200, estRate: 450, actRate: 440, isHeader: false },
-    { id: '3.0', description: 'أعمال التشطيبات', unit: '-', qty: 0, estRate: 0, actRate: 0, isHeader: true },
-    { id: '3.1', description: 'أعمال البلاط والرخام', unit: 'م2', qty: 3500, estRate: 120, actRate: 135, isHeader: false },
-  ]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [formData, setFormData] = useState({ description: '', unit: 'متر مربع', qty: 1, estRate: 100 });
+
+  const handleAddBOQ = (e) => {
+    e.preventDefault();
+    const newItem = {
+      id: `M-${Date.now().toString().slice(-4)}`,
+      description: formData.description,
+      unit: formData.unit,
+      qty: Number(formData.qty),
+      estRate: Number(formData.estRate),
+      actRate: Number(formData.estRate),
+      isHeader: false
+    };
+    setBoqItems([...boqItems, newItem]);
+    setShowAddModal(false);
+    setFormData({ description: '', unit: 'متر مربع', qty: 1, estRate: 100 });
+  };
+
+  const handleDeleteBOQ = (id) => {
+    setBoqItems(boqItems.filter(item => item.id !== id));
+  };
+
+  // جلب تسعيرة المواد من قاعدة البيانات SQLite المركزية وجلب الحصر الرقمي
+  React.useEffect(() => {
+    const fetchBoqData = async () => {
+      if (window.electronAPI) {
+        // جلب كتالوج المواد
+        const catalogRows = await window.electronAPI.queryDb('SELECT * FROM materials_catalog');
+        setMaterialsCatalog(catalogRows);
+        
+        // جلب القياسات التي تمت من شاشة الحصر الرقمي
+        const takeoffRows = await window.electronAPI.queryDb('SELECT * FROM takeoff_measurements ORDER BY id ASC');
+        
+        // تحويل القياسات إلى بنود (BOQ Items)
+        const mappedItems = takeoffRows.map((item, index) => {
+          return {
+            id: `1.${index + 1}`,
+            description: item.element_name,
+            unit: item.unit,
+            qty: item.raw_value,
+            estRate: (item.estimated_cost / (item.raw_value || 1)), // حساب السعر الإفرادي التقديري
+            actRate: (item.estimated_cost / (item.raw_value || 1)), // افتراض أن الفعلي هو التقديري حالياً
+            isHeader: false,
+            dbId: item.id
+          };
+        });
+        
+        // إضافة عنوان رئيسي فوق البنود
+        const headerItem = {
+          id: '1.0', description: 'الأعمال المستوردة من الحصر الرقمي', unit: '-', qty: 0, estRate: 0, actRate: 0, isHeader: true
+        };
+        
+        setBoqItems(mappedItems.length > 0 ? [headerItem, ...mappedItems] : []);
+      }
+    };
+    fetchBoqData();
+  }, [selectedProject]);
+
+  const handleOcrUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsOcrProcessing(true);
+    setOcrProgress(0);
+    try {
+      const extractedText = await extractTextFromImage(file, (progress) => {
+        setOcrProgress(progress);
+      });
+      
+      const newItems = parseTextToBOQTable(extractedText);
+      
+      const formattedItems = newItems.map((item, index) => {
+        const matchedMaterial = materialsCatalog.find(m => item.description.includes(m.name) || m.name.includes(item.description));
+        const estimatedRate = matchedMaterial ? matchedMaterial.unit_price : 150; 
+        
+        return {
+          id: `OCR-${Math.floor(Math.random() * 1000)}`,
+          description: item.description,
+          unit: matchedMaterial ? matchedMaterial.unit : item.unit,
+          qty: item.quantity,
+          estRate: estimatedRate, 
+          actRate: estimatedRate, 
+          isHeader: false
+        };
+      });
+
+      setBoqItems(prev => [...prev, ...formattedItems]);
+    } catch (error) {
+      console.error(error);
+      alert('حدث خطأ أثناء معالجة الصورة.');
+    } finally {
+      setIsOcrProcessing(false);
+    }
+  };
 
   const calculateTotal = (rateKey) => {
     return boqItems.reduce((acc, item) => !item.isHeader ? acc + (item.qty * item[rateKey]) : acc, 0);
@@ -58,6 +150,19 @@ export default function BOQ() {
           <Button variant="primary" className="rounded-xl shadow-lg shadow-primary-200">
             <UploadCloud className="w-5 h-5 ml-2" /> استيراد Excel
           </Button>
+          <div className="relative">
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleOcrUpload} 
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+              disabled={isOcrProcessing} 
+            />
+            <Button variant="secondary" className="rounded-xl border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 w-48" disabled={isOcrProcessing}>
+              {isOcrProcessing ? <Loader2 className="w-5 h-5 ml-2 animate-spin" /> : <Camera className="w-5 h-5 ml-2" />}
+              {isOcrProcessing ? `جارِ الاستخراج ${ocrProgress}%` : 'استيراد بصورة (OCR)'}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -80,7 +185,7 @@ export default function BOQ() {
           <div className="p-3 bg-amber-100 text-amber-600 rounded-2xl"><Percent className="w-6 h-6" /></div>
           <div>
             <p className="text-[10px] text-gray-500 font-bold uppercase">نسبة الإنجاز المالي</p>
-            <p className="text-2xl font-black text-amber-900">{((actTotal / estTotal) * 100).toFixed(1)}%</p>
+            <p className="text-2xl font-black text-amber-900">{estTotal > 0 ? ((actTotal / estTotal) * 100).toFixed(1) : '0.0'}%</p>
           </div>
         </Card>
         <Card className={`p-5 flex items-center gap-4 bg-gradient-to-l border shadow-sm ${variance >= 0 ? 'from-green-50 border-green-100' : 'from-red-50 border-red-100'}`}>
@@ -109,7 +214,7 @@ export default function BOQ() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" className="bg-white"><Download className="w-4 h-4 ml-2" /> تصدير</Button>
-            <Button variant="secondary" className="bg-white"><Plus className="w-4 h-4 ml-2" /> إضافة بند جديد</Button>
+            <Button variant="secondary" onClick={() => setShowAddModal(true)} className="bg-white"><Plus className="w-4 h-4 ml-2" /> إضافة بند جديد</Button>
           </div>
         </div>
 
@@ -125,6 +230,7 @@ export default function BOQ() {
                 <th className="px-6 py-3 font-bold w-32">الإجمالي التقديري</th>
                 <th className="px-6 py-3 font-bold w-32">السعر الفعلي</th>
                 <th className="px-6 py-3 font-bold w-32">الإجمالي الفعلي</th>
+                <th className="px-6 py-3 font-bold w-24">إجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -140,12 +246,33 @@ export default function BOQ() {
                   <td className="px-6 py-3 font-black text-indigo-700">{item.isHeader ? '' : `${(item.qty * item.estRate).toLocaleString()} ر.س`}</td>
                   <td className="px-6 py-3 font-bold text-gray-700">{item.isHeader ? '' : `${item.actRate.toLocaleString()} ر.س`}</td>
                   <td className="px-6 py-3 font-black text-emerald-700">{item.isHeader ? '' : `${(item.qty * item.actRate).toLocaleString()} ر.س`}</td>
+                  <td className="px-6 py-3">
+                    {!item.isHeader && (
+                      <button onClick={() => handleDeleteBOQ(item.id)} className="text-red-500 hover:text-red-700 font-bold text-sm">حذف</button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Card>
+
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة بند BOQ يدوي">
+        <form noValidate onSubmit={handleAddBOQ} className="space-y-4">
+          <Input label="وصف البند" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+          <div className="grid grid-cols-2 gap-4">
+            <Select label="الوحدة" options={[{label:'متر مربع',value:'متر مربع'},{label:'متر مكعب',value:'متر مكعب'},{label:'مقطوعية',value:'مقطوعية'},{label:'حبة',value:'حبة'}]} value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} />
+            <Input label="الكمية" type="number" value={formData.qty} onChange={e => setFormData({...formData, qty: e.target.value})} />
+          </div>
+          <Input label="السعر الإفرادي التقديري (ر.س)" type="number" value={formData.estRate} onChange={e => setFormData({...formData, estRate: e.target.value})} />
+          
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)} className="rounded-xl">إلغاء</Button>
+            <Button variant="primary" type="submit" className="rounded-xl shadow-lg shadow-primary-200">إضافة البند</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -21,31 +21,23 @@ import {
 } from 'lucide-react';
 
 export default function DocumentCenter() {
-  const { employees } = useData();
+  const { employees, projectFiles, addItem, deleteItem } = useData();
   const [currentFolder, setCurrentFolder] = useState('الكل');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [fileName, setFileName] = useState('');
 
   // Mock Folders
   const folders = [
-    { id: 'all', name: 'الكل', icon: Folder, count: 45 },
-    { id: 'contracts', name: 'العقود والاتفاقيات', icon: FileText, count: 12 },
-    { id: 'drawings', name: 'المخططات الهندسية', icon: ImageIcon, count: 24 },
-    { id: 'invoices', name: 'الفواتير والمستخلصات', icon: FileSpreadsheet, count: 86 },
-    { id: 'approvals', name: 'الاعتمادات والتراخيص', icon: FileArchive, count: 9 },
+    { id: 'all', name: 'الكل', icon: Folder, count: projectFiles?.length || 0 },
+    { id: 'contracts', name: 'العقود والاتفاقيات', icon: FileText, count: projectFiles?.filter(f => f.folder === 'العقود والاتفاقيات').length || 0 },
+    { id: 'drawings', name: 'المخططات الهندسية', icon: ImageIcon, count: projectFiles?.filter(f => f.folder === 'المخططات الهندسية').length || 0 },
+    { id: 'invoices', name: 'الفواتير والمستخلصات', icon: FileSpreadsheet, count: projectFiles?.filter(f => f.folder === 'الفواتير والمستخلصات').length || 0 },
+    { id: 'approvals', name: 'الاعتمادات والتراخيص', icon: FileArchive, count: projectFiles?.filter(f => f.folder === 'الاعتمادات والتراخيص').length || 0 },
   ];
-
-  // Mock Files Data
-  const [files, setFiles] = useState([
-    { id: 1, name: 'عقد_مشروع_الرياض_الجديد.pdf', type: 'pdf', size: '2.4 MB', date: '2023-10-15', folder: 'العقود والاتفاقيات', uploader: 'أحمد محمد' },
-    { id: 2, name: 'مخطط_الدور_الأرضي_فيلا_A.dwg', type: 'image', size: '15.1 MB', date: '2023-10-18', folder: 'المخططات الهندسية', uploader: 'م. سارة' },
-    { id: 3, name: 'مستخلص_رقم_1_مشروع_الدمام.xlsx', type: 'excel', size: '1.1 MB', date: '2023-10-20', folder: 'الفواتير والمستخلصات', uploader: 'محمود المالي' },
-    { id: 4, name: 'رخصة_بناء_مشروع_جدة.pdf', type: 'pdf', size: '3.5 MB', date: '2023-10-22', folder: 'الاعتمادات والتراخيص', uploader: 'علي الإداري' },
-    { id: 5, name: 'تقرير_التربة_المبدئي.pdf', type: 'pdf', size: '8.2 MB', date: '2023-10-25', folder: 'المخططات الهندسية', uploader: 'م. سارة' },
-    { id: 6, name: 'جدول_الكميات_المسعر.xlsx', type: 'excel', size: '4.7 MB', date: '2023-10-28', folder: 'العقود والاتفاقيات', uploader: 'أحمد محمد' },
-  ]);
 
   const handleDrag = function (e) {
     e.preventDefault();
@@ -61,10 +53,48 @@ export default function DocumentCenter() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
+    // Handle file drag and drop
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      // Handle file upload here
-      setShowUploadModal(false);
+      const file = e.dataTransfer.files[0];
+      setFileName(file.name);
+      setSelectedFile(file);
     }
+  };
+
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFileName(file.name);
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUploadSubmit = (e) => {
+    e.preventDefault();
+    if (!fileName) return;
+
+    let fileType = 'pdf';
+    if (fileName.toLowerCase().endsWith('xls') || fileName.toLowerCase().endsWith('xlsx')) fileType = 'excel';
+    if (fileName.toLowerCase().endsWith('jpg') || fileName.toLowerCase().endsWith('png')) fileType = 'image';
+
+    const newFile = {
+      name: fileName,
+      type: fileType,
+      size: selectedFile ? `${(selectedFile.size / (1024 * 1024)).toFixed(1)} MB` : 'غير محدد',
+      date: new Date().toISOString().split('T')[0],
+      folder: currentFolder === 'الكل' ? 'العقود والاتفاقيات' : currentFolder,
+      project: 'عام',
+      uploader: 'مدير النظام'
+    };
+    
+    addItem('projectFiles', newFile);
+    setShowUploadModal(false);
+    setFileName('');
+    setSelectedFile(null);
+  };
+
+  const handleDeleteFile = (id) => {
+    deleteItem('projectFiles', id);
   };
 
   const getFileIcon = (type) => {
@@ -76,9 +106,10 @@ export default function DocumentCenter() {
     }
   };
 
-  const filteredFiles = files.filter(file => 
+  const safeFiles = projectFiles || [];
+  const filteredFiles = safeFiles.filter(file => 
     (currentFolder === 'الكل' || file.folder === currentFolder) &&
-    file.name.toLowerCase().includes(searchQuery.toLowerCase())
+    file.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -178,8 +209,8 @@ export default function DocumentCenter() {
                 {filteredFiles.map(file => (
                   <div key={file.id} className="group relative bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-primary-200 transition-all duration-300 flex flex-col items-center text-center gap-3">
                     <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 text-gray-400 hover:text-primary-600 bg-gray-50 hover:bg-primary-50 rounded-lg">
-                        <MoreVertical className="w-4 h-4" />
+                      <button onClick={() => handleDeleteFile(file.id)} className="p-1.5 text-gray-400 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-lg" title="حذف الملف">
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                     <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -224,9 +255,20 @@ export default function DocumentCenter() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="p-1.5 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50"><Download className="w-4 h-4" /></button>
-                            <button className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"><Share2 className="w-4 h-4" /></button>
-                            <button className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => {
+                              const element = document.createElement("a");
+                              const fileData = new Blob([`محتوى المستند: ${file.name}`], {type: 'text/plain'});
+                              element.href = URL.createObjectURL(fileData);
+                              element.download = file.name;
+                              document.body.appendChild(element);
+                              element.click();
+                            }} className="p-1.5 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50" title="تحميل"><Download className="w-4 h-4" /></button>
+                            
+                            <button onClick={() => {
+                              navigator.clipboard.writeText(`https://erp.local/docs/${file.id}/${file.name}`);
+                            }} className="p-1.5 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 focus:bg-blue-100 focus:text-blue-700" title="نسخ رابط المشاركة"><Share2 className="w-4 h-4" /></button>
+                            
+                            <button onClick={() => handleDeleteFile(file.id)} className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50" title="حذف"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </td>
                       </tr>
@@ -241,9 +283,10 @@ export default function DocumentCenter() {
 
       {/* Upload Modal */}
       <Modal isOpen={showUploadModal} onClose={() => setShowUploadModal(false)} title="رفع ملفات جديدة">
-        <div className="space-y-4">
+        <form noValidate onSubmit={handleUploadSubmit} className="space-y-4">
+          <Input label="اسم الملف" value={fileName} onChange={(e) => setFileName(e.target.value)} required />
           <div 
-            className={`w-full h-48 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all duration-300 ${
+            className={`w-full h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center relative transition-all duration-300 ${
               dragActive ? 'border-primary-500 bg-primary-50 scale-[1.02]' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
             }`}
             onDragEnter={handleDrag}
@@ -251,10 +294,10 @@ export default function DocumentCenter() {
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <UploadCloud className={`w-12 h-12 mb-3 ${dragActive ? 'text-primary-600 animate-bounce' : 'text-gray-400'}`} />
-            <p className="text-gray-800 font-bold text-lg">اسحب وأفلت الملفات هنا</p>
-            <p className="text-gray-500 text-sm mt-1">أو اضغط لاختيار الملفات من جهازك</p>
-            <Button variant="outline" className="mt-4 rounded-xl bg-white">تصفح الملفات</Button>
+            <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={handleFileSelect} />
+            <UploadCloud className={`w-10 h-10 mb-2 ${dragActive ? 'text-primary-600 animate-bounce' : 'text-gray-400'}`} />
+            <p className="text-gray-800 font-bold text-sm">اسحب وأفلت الملفات هنا أو اضغط للاختيار</p>
+            {selectedFile && <p className="text-primary-600 text-xs mt-2 font-bold">{selectedFile.name}</p>}
           </div>
 
           <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm font-medium flex items-start gap-3">
@@ -263,10 +306,10 @@ export default function DocumentCenter() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <Button variant="secondary" onClick={() => setShowUploadModal(false)} className="rounded-xl">إلغاء</Button>
-            <Button variant="primary" className="rounded-xl shadow-lg shadow-primary-200">بدء الرفع</Button>
+            <Button variant="secondary" type="button" onClick={() => setShowUploadModal(false)} className="rounded-xl">إلغاء</Button>
+            <Button variant="primary" type="submit" className="rounded-xl shadow-lg shadow-primary-200">بدء الرفع</Button>
           </div>
-        </div>
+        </form>
       </Modal>
     </div>
   );

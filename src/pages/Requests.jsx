@@ -34,6 +34,35 @@ export default function Requests() {
     { id: 'REQ-1005', type: 'اعتماد مخطط', applicant: 'م. سارة', project: 'مشروع الرياض', date: '2023-11-22', status: 'قيد الانتظار', amount: '-' },
   ]);
 
+  const [formData, setFormData] = useState({
+    title: '',
+    projectId: '',
+    amount: '',
+    supplier: '',
+    leaveType: 'annual',
+    startDate: '',
+    endDate: ''
+  });
+
+  const handleAddRequest = (e) => {
+    e.preventDefault();
+    const newReq = {
+      id: `REQ-${Date.now().toString().slice(-4)}`,
+      type: requestType === 'purchase' ? 'شراء مواد' : requestType === 'pettyCash' ? 'صرف عهدة' : 'إجازة',
+      applicant: 'أنت', 
+      project: requestType === 'purchase' ? (projects.find(p => p.id == formData.projectId)?.name || 'عام') : '-',
+      date: new Date().toISOString().split('T')[0],
+      status: 'قيد الانتظار',
+      amount: requestType === 'leave' ? '-' : `${formData.amount} ر.س`
+    };
+    setRequests([newReq, ...requests]);
+    setShowAddModal(false);
+  };
+
+  const handleUpdateStatus = (id, newStatus) => {
+    setRequests(requests.map(r => r.id === id ? { ...r, status: newStatus } : r));
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'معتمد': return <Badge variant="success" className="bg-emerald-50 text-emerald-700 border-emerald-200"><CheckCircle2 className="w-3 h-3 mr-1" /> معتمد</Badge>;
@@ -162,8 +191,8 @@ export default function Requests() {
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {req.status === 'قيد الانتظار' && (
                         <>
-                          <button className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="اعتماد"><Check className="w-5 h-5" /></button>
-                          <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="رفض"><X className="w-5 h-5" /></button>
+                          <button onClick={() => handleUpdateStatus(req.id, 'معتمد')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="اعتماد"><Check className="w-5 h-5" /></button>
+                          <button onClick={() => handleUpdateStatus(req.id, 'مرفوض')} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="رفض"><X className="w-5 h-5" /></button>
                         </>
                       )}
                       <button className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="عرض التفاصيل"><Eye className="w-5 h-5" /></button>
@@ -200,14 +229,14 @@ export default function Requests() {
             </button>
           </div>
 
-          <form className="space-y-4">
+          <form noValidate className="space-y-4" onSubmit={handleAddRequest}>
             {requestType === 'purchase' && (
               <>
-                <Select label="المشروع (اختياري)" options={projects.map(p => ({label: p.name, value: p.id}))} />
-                <Input label="عنوان الطلب / وصف المواد" required />
+                <Select label="المشروع (اختياري)" options={projects.map(p => ({label: p.name, value: p.id}))} value={formData.projectId} onChange={e => setFormData({...formData, projectId: e.target.value})} />
+                <Input label="عنوان الطلب / وصف المواد" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="القيمة التقديرية" type="number" required />
-                  <Input label="المورد المقترح (إن وجد)" />
+                  <Input label="القيمة التقديرية" type="number" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} required />
+                  <Input label="المورد المقترح (إن وجد)" value={formData.supplier} onChange={e => setFormData({...formData, supplier: e.target.value})} />
                 </div>
                 <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
                   <FileSignature className="w-8 h-8 text-gray-400 mx-auto mb-2" />
@@ -219,25 +248,25 @@ export default function Requests() {
             {requestType === 'pettyCash' && (
               <>
                 <Select label="نوع العهدة" options={[{label:'موقع', value:'site'}, {label:'إدارية', value:'admin'}]} />
-                <Input label="المبلغ المطلوب" type="number" required />
-                <Input label="سبب صرف العهدة بالتفصيل" required />
+                <Input label="المبلغ المطلوب" type="number" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} required />
+                <Input label="سبب صرف العهدة بالتفصيل" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
               </>
             )}
 
             {requestType === 'leave' && (
               <>
-                <Select label="نوع الإجازة" options={[{label:'سنوية', value:'annual'}, {label:'مرضية', value:'sick'}, {label:'اضطرارية', value:'emergency'}]} />
+                <Select label="نوع الإجازة" options={[{label:'سنوية', value:'annual'}, {label:'مرضية', value:'sick'}, {label:'اضطرارية', value:'emergency'}]} value={formData.leaveType} onChange={e => setFormData({...formData, leaveType: e.target.value})} />
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="من تاريخ" type="date" required />
-                  <Input label="إلى تاريخ" type="date" required />
+                  <Input label="من تاريخ" type="date" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} required />
+                  <Input label="إلى تاريخ" type="date" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} required />
                 </div>
                 <Input label="البديل المقترح أثناء الإجازة" />
               </>
             )}
 
             <div className="flex justify-end gap-3 pt-4 mt-6 border-t border-gray-100">
-              <Button variant="secondary" onClick={() => setShowAddModal(false)} className="rounded-xl">إلغاء</Button>
-              <Button variant="primary" className="rounded-xl shadow-lg shadow-primary-200">تقديم الطلب للاعتماد</Button>
+              <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)} className="rounded-xl">إلغاء</Button>
+              <Button variant="primary" type="submit" className="rounded-xl shadow-lg shadow-primary-200">تقديم الطلب للاعتماد</Button>
             </div>
           </form>
         </div>

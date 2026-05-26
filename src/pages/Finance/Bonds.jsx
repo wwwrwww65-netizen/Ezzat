@@ -65,7 +65,7 @@ export default function Bonds() {
       </Card>
 
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إنشاء سند جديد">
-        <form className="space-y-4">
+        <form noValidate className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Select
               label="نوع السند"

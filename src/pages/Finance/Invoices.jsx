@@ -129,7 +129,7 @@ export default function Invoices() {
       </Card>
 
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إصدار فاتورة جديدة" className="max-w-3xl">
-        <form className="space-y-6">
+        <form noValidate className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <Select label="العميل" options={clients.map(c => ({ label: c.name, value: c.id }))} required />
             <Select label="المشروع المرتبط" options={projects.map(p => ({ label: p.name, value: p.id }))} />

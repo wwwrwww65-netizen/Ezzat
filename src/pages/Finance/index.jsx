@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../components/UI';
+import { Card } from '../../components/UI';
 import { BookOpen, TrendingUp, TrendingDown, RefreshCcw } from 'lucide-react';
 
 export default function Finance() {

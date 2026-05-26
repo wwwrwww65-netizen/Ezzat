@@ -23,7 +23,7 @@ export default function ForgotPassword() {
         </div>
 
         <Card className="p-8 shadow-xl border-none">
-          <form className="space-y-6">
+          <form noValidate className="space-y-6">
             <Input
               label="البريد الإلكتروني"
               type="email"

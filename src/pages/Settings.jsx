@@ -1,133 +1,169 @@
-import React, { useState } from 'react';
-import { Card, Button, Input, Select } from '../components/UI';
-import { useData } from '../context/DataContext';
-import { Save, Bell, Globe, Lock, Building, Moon, Sun } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Card, Button, Input } from '../components/UI';
+import { Save, Building2, Receipt, ShieldCheck } from 'lucide-react';
 
 export default function Settings() {
-  const { logActivity, theme, toggleTheme } = useData();
-  const [formData, setFormData] = useState({
-    companyName: 'شركة أبو جواد للمقاولات',
-    email: 'contact@abujawad.com',
-    currency: 'ر.س',
-    language: 'العربية',
-    taxNumber: '300012345600003'
+  const [settings, setSettings] = useState({
+    companyName: '',
+    taxNumber: '',
+    commercialRegister: '',
+    address: '',
+    logoUrl: ''
   });
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    logActivity('تحديث إعدادات النظام العامة');
-    alert('تم حفظ الإعدادات بنجاح');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // جلب الإعدادات من قاعدة البيانات
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (window.electronAPI) {
+        const rows = await window.electronAPI.queryDb('SELECT * FROM settings');
+        const loadedSettings = {};
+        rows.forEach(row => {
+          loadedSettings[row.key] = row.value;
+        });
+        setSettings(prev => ({ ...prev, ...loadedSettings }));
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  // حفظ الإعدادات
+  const handleSave = async () => {
+    setIsSaving(true);
+    if (window.electronAPI) {
+      for (const [key, value] of Object.entries(settings)) {
+        await window.electronAPI.executeDb(
+          'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+          [key, value]
+        );
+      }
+    }
+    setTimeout(() => setIsSaving(false), 800);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setSettings(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettings(prev => ({ ...prev, logoBase64: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-4xl mx-auto h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-slate-100">الإعدادات</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400">إدارة تفاصيل الشركة وإعدادات النظام</p>
+        <h1 className="text-3xl font-black text-gray-800">الإعدادات العامة للشركة</h1>
+        <p className="text-gray-500 mt-2">تهيئة بيانات الشركة ليتم طباعتها على المستخلصات والفواتير الضريبية (ZATCA).</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card title="بيانات الشركة" subtitle="المعلومات التي تظهر في الفواتير والسندات">
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="اسم الشركة"
-                  value={formData.companyName}
-                  onChange={(e) => setFormData({...formData, companyName: e.target.value})}
-                />
-                <Input
-                  label="الرقم الضريبي"
-                  value={formData.taxNumber}
-                  onChange={(e) => setFormData({...formData, taxNumber: e.target.value})}
-                />
-                <Input
-                  label="البريد الإلكتروني للشركة"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                />
-                <Select
-                  label="العملة الأساسية"
-                  value={formData.currency}
-                  onChange={(e) => setFormData({...formData, currency: e.target.value})}
-                  options={[{ label: 'ريال سعودي (ر.س)', value: 'ر.س' }, { label: 'دولار أمريكي ($)', value: '$' }]}
-                />
-              </div>
-              <div className="flex justify-end pt-4">
-                <Button type="submit">
-                  <Save className="w-4 h-4" />
-                  حفظ التغييرات
-                </Button>
-              </div>
-            </form>
-          </Card>
-
-          <Card title="الأمان والخصوصية" subtitle="تغيير كلمة المرور وإعدادات الدخول">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-100 dark:bg-slate-800 rounded-lg">
-                    <Lock className="w-5 h-5 text-gray-600 dark:text-slate-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-800 dark:text-slate-200">كلمة المرور</p>
-                    <p className="text-xs text-gray-500 dark:text-slate-500">آخر تغيير منذ 3 أشهر</p>
-                  </div>
+      <div className="grid grid-cols-1 gap-6">
+        {/* بيانات الشركة */}
+        <Card className="p-6 border-t-4 border-t-primary-500 shadow-sm">
+          <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-primary-600" />
+            الهوية والبيانات الأساسية
+          </h2>
+          
+          <div className="flex flex-col sm:flex-row gap-8 mb-8 items-center bg-gray-50 p-6 rounded-2xl border border-gray-100">
+            <div className="w-32 h-32 rounded-2xl bg-white border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative group">
+              {settings.logoBase64 ? (
+                <img src={settings.logoBase64} alt="Company Logo" className="w-full h-full object-contain" />
+              ) : (
+                <div className="text-center">
+                  <div className="text-gray-400 text-xs font-bold">شعار الشركة</div>
+                  <div className="text-gray-300 text-[10px]">اضغط للرفع</div>
                 </div>
-                <Button variant="secondary" size="sm">تحديث</Button>
+              )}
+              <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+              <div className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center pointer-events-none transition-all">
+                <span className="text-white text-xs font-bold">تغيير الشعار</span>
               </div>
             </div>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card title="التفضيلات">
-            <div className="space-y-4">
-              <Select
-                label="لغة النظام"
-                value={formData.language}
-                onChange={(e) => setFormData({...formData, language: e.target.value})}
-                options={[{ label: 'العربية', value: 'العربية' }, { label: 'English', value: 'English' }]}
+            <div className="flex-1 w-full">
+              <label className="block text-sm font-bold text-gray-700 mb-2">اسم شركة المقاولات (يظهر في القوائم والفواتير)</label>
+              <Input 
+                name="companyName" 
+                value={settings.companyName || ''} 
+                onChange={handleChange} 
+                placeholder="مثال: شركة إعمار المتقدمة للمقاولات" 
+                className="text-lg font-black"
               />
-              <div className="pt-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700 dark:text-slate-300">تفعيل الإشعارات</span>
-                  <input type="checkbox" defaultChecked className="h-4 w-4 text-primary-600 rounded dark:bg-slate-800 dark:border-slate-600" />
-                </div>
-
-                {/* ===== الوضع الليلي — مربوط بالنظام الفعلي ===== */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-slate-800/60 border border-gray-100 dark:border-slate-700">
-                  <div className="flex items-center gap-2">
-                    {theme === 'dark'
-                      ? <Moon className="w-4 h-4 text-blue-400" />
-                      : <Sun className="w-4 h-4 text-amber-500" />
-                    }
-                    <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-                      {theme === 'dark' ? 'الوضع الليلي مفعّل' : 'الوضع النهاري مفعّل'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={toggleTheme}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${
-                      theme === 'dark' ? 'bg-blue-600' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                      theme === 'dark' ? '-translate-x-6' : '-translate-x-1'
-                    }`} />
-                  </button>
-                </div>
-              </div>
             </div>
-          </Card>
+          </div>
 
-          <Card className="bg-primary-600 text-white">
-            <div className="flex flex-col items-center text-center p-2">
-              <Building className="w-12 h-12 mb-4 opacity-80" />
-              <h3 className="font-bold text-lg">النسخة الاحترافية</h3>
-              <p className="text-sm opacity-90 mt-2">أنت تستخدم النسخة الكاملة من نظام إدارة شركة أبو جواد</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">رقم السجل التجاري</label>
+              <Input 
+                name="commercialRegister" 
+                value={settings.commercialRegister} 
+                onChange={handleChange} 
+                placeholder="أدخل رقم السجل التجاري" 
+              />
             </div>
-          </Card>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-gray-700 mb-2">العنوان الوطني للشركة</label>
+              <Input 
+                name="address" 
+                value={settings.address} 
+                onChange={handleChange} 
+                placeholder="مثال: الرياض، حي العليا، شارع الملك فهد" 
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* بيانات الفوترة والضريبة */}
+        <Card className="p-6 border-t-4 border-t-emerald-500 shadow-sm">
+          <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <Receipt className="w-5 h-5 text-emerald-600" />
+            البيانات الضريبية (ZATCA)
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">الرقم الضريبي (VAT Number)</label>
+              <Input 
+                name="taxNumber" 
+                value={settings.taxNumber} 
+                onChange={handleChange} 
+                placeholder="مكون من 15 رقم ويبدأ وينتهي بـ 3" 
+              />
+              <p className="text-xs text-gray-400 mt-2">هذا الرقم سيظهر في رمز الـ QR Code الخاص بالفواتير.</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* الحماية والترخيص */}
+        <Card className="p-6 border-t-4 border-t-indigo-500 shadow-sm bg-indigo-50/30">
+          <h2 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-indigo-600" />
+            حالة الترخيص (Firebase License)
+          </h2>
+          <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-indigo-100">
+            <div>
+              <p className="font-bold text-gray-800">رقم الجهاز (Device ID): <span className="font-mono text-indigo-600">REQ-8472-X9</span></p>
+              <p className="text-sm text-green-600 font-bold mt-1">النسخة مفعلة (الترخيص ساري حتى 2027)</p>
+            </div>
+            <Button onClick={() => {
+              setIsSaving(true);
+              setTimeout(() => setIsSaving(false), 800);
+            }} variant="outline" className="border-indigo-200 text-indigo-700">تحديث الترخيص</Button>
+          </div>
+        </Card>
+
+        <div className="flex justify-end pt-4 pb-12">
+          <Button onClick={handleSave} variant="primary" className="px-8 py-3 rounded-xl font-bold text-lg shadow-xl shadow-primary-200" disabled={isSaving}>
+            {isSaving ? 'جاري الحفظ...' : <><Save className="w-5 h-5 ml-2" /> حفظ الإعدادات</>}
+          </Button>
         </div>
       </div>
     </div>

@@ -29,6 +29,7 @@ export default function Projects() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     projectNumber: `PRJ-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
@@ -47,7 +48,8 @@ export default function Projects() {
   const filteredProjects = projects.filter(prj =>
     (prj.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      prj.projectNumber?.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (statusFilter === '' || prj.status === statusFilter)
+    (statusFilter === '' || prj.status === statusFilter) &&
+    (showArchived ? prj.status === 'مكتمل' : prj.status !== 'مكتمل')
   );
 
   const handleAddProject = (e) => {
@@ -85,9 +87,9 @@ export default function Projects() {
             <Plus className="w-4 h-4" />
             <span>إضافة مشروع جديد</span>
           </Button>
-          <Button variant="secondary">
+          <Button onClick={() => setShowArchived(!showArchived)} variant={showArchived ? 'primary' : 'secondary'}>
             <Archive className="w-4 h-4" />
-            <span>الأرشيف</span>
+            <span>{showArchived ? 'العودة للمشاريع' : 'الأرشيف'}</span>
           </Button>
         </div>
       </div>
@@ -154,7 +156,7 @@ export default function Projects() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           />
-          <Button variant="secondary"><Filter className="w-4 h-4" /></Button>
+          <Button onClick={() => setStatusFilter(statusFilter ? '' : 'نشط')} variant={statusFilter ? 'primary' : 'secondary'}><Filter className="w-4 h-4" /></Button>
         </div>
       </div>
 
@@ -165,8 +167,10 @@ export default function Projects() {
               <div className="flex justify-between items-start mb-4">
                 <Badge variant={getStatusVariant(project.status)}>{project.status}</Badge>
                 <div className="flex items-center gap-1">
-                  <button className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600"><Copy className="w-4 h-4" /></button>
-                  <button onClick={() => deleteItem('projects', project.id)} className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => {
+                    addItem('projects', { ...project, id: Date.now(), name: `${project.name} (نسخة)`, projectNumber: `PRJ-${Date.now().toString().slice(-4)}` });
+                  }} className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600" title="نسخ المشروع"><Copy className="w-4 h-4" /></button>
+                  <button onClick={() => deleteItem('projects', project.id)} className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600" title="حذف المشروع"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
 
@@ -215,15 +219,14 @@ export default function Projects() {
       </div>
 
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة مشروع جديد" className="max-w-4xl">
-        <form className="space-y-4" onSubmit={handleAddProject}>
+        <form noValidate className="space-y-4" onSubmit={handleAddProject}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="اسم المشروع" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+            <Input label="اسم المشروع" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
             <Select
               label="العميل"
               options={clients.map(c => ({ label: c.name, value: c.id }))}
               value={formData.clientId}
               onChange={e => setFormData({...formData, clientId: e.target.value})}
-              required
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

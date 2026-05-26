@@ -30,17 +30,35 @@ import Requests from './pages/Requests';
 import DocumentCenter from './pages/DocumentCenter';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
+import Subcontractors from './pages/Subcontractors';
 import BOQ from './pages/BOQ';
 import Valuations from './pages/Valuations';
 import DailyLogs from './pages/DailyLogs';
+import DigitalTakeoff from './pages/DigitalTakeoff';
 
 function App() {
-  const isAuthenticated = true;
+  const [isAuthenticated, setIsAuthenticated] = React.useState(true);
+  const [user, setUser] = React.useState(() => {
+    const savedUser = localStorage.getItem('auth_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const handleLogin = (userData, rememberMe) => {
+    setUser(userData);
+    setIsAuthenticated(true);
+    
+    if (rememberMe) {
+      localStorage.setItem('auth_token', 'true');
+      localStorage.setItem('auth_user', JSON.stringify(userData));
+    } else {
+      sessionStorage.setItem('auth_token', 'true');
+    }
+  };
 
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
@@ -51,6 +69,8 @@ function App() {
           <Route path="/employees" element={<Employees />} />
           <Route path="/finance" element={<Finance />} />
           <Route path="/invoices" element={<Invoices />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/subcontractors" element={<Subcontractors />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/bonds" element={<Bonds />} />
           <Route path="/expenses" element={<Expenses />} />
@@ -74,6 +94,7 @@ function App() {
           <Route path="/boq" element={<BOQ />} />
           <Route path="/valuations" element={<Valuations />} />
           <Route path="/daily-logs" element={<DailyLogs />} />
+          <Route path="/digital-takeoff" element={<DigitalTakeoff />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />

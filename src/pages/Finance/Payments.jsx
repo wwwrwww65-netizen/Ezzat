@@ -67,7 +67,7 @@ export default function Payments() {
       </Card>
 
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="تسجيل دفعة جديدة">
-        <form className="space-y-4">
+        <form noValidate className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Select label="الجهة (العميل/المورد)" options={clients.map(c => ({ label: c.name, value: c.id }))} />
             <Select label="المشروع" options={projects.map(p => ({ label: p.name, value: p.id }))} />

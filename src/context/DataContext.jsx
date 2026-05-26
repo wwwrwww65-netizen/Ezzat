@@ -38,7 +38,7 @@ export const DataProvider = ({ children }) => {
       currentRole: 'admin'
     };
 
-    const savedData = localStorage.getItem('abujawad_erp_data');
+    const savedData = localStorage.getItem('abujawad_erp_data_v6');
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
@@ -85,7 +85,7 @@ export const DataProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    localStorage.setItem('abujawad_erp_data', JSON.stringify(data));
+    localStorage.setItem('abujawad_erp_data_v6', JSON.stringify(data));
   }, [data]);
 
   // Activity Logger
