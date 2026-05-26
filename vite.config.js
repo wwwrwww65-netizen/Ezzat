@@ -49,6 +49,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       devOptions: { enabled: false },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 50000000 // 50MB
+      },
       manifest: {
         name: 'Construction ERP System',
         short_name: 'ConstERP',
