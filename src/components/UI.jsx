@@ -37,15 +37,16 @@ export const Button = ({ className, variant = 'primary', size = 'md', children, 
   );
 };
 
-export const Card = ({ className, children, title, subtitle, footer, noPadding = false }) => {
+export const Card = ({ className, children, title, subtitle, footer, noPadding = false, headerAction }) => {
   return (
     <div className={cn('bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300', className)}>
-      {(title || subtitle) && (
-        <div className="px-6 py-5 border-b border-gray-50 dark:border-slate-800/80 flex items-center justify-between">
+      {(title || subtitle || headerAction) && (
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800/80 flex items-center justify-between gap-4">
           <div>
              {title && <h3 className="text-lg font-black text-gray-800 dark:text-slate-100 tracking-tight">{title}</h3>}
              {subtitle && <p className="text-xs text-gray-400 dark:text-slate-400 mt-0.5 font-medium">{subtitle}</p>}
           </div>
+          {headerAction && <div className="flex items-center gap-2 flex-shrink-0">{headerAction}</div>}
         </div>
       )}
       <div className={cn(!noPadding && 'p-6')}>{children}</div>
@@ -118,6 +119,93 @@ export const Select = ({ label, options, error, className, id, ...props }) => {
         ))}
       </select>
       {error && <p className="text-[10px] text-red-600 font-bold">{error}</p>}
+    </div>
+  );
+};
+
+export const SearchableSelect = ({ value, onChange, options = [], placeholder = 'اختر...', className }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [search, setSearch] = React.useState('');
+  const [dropPos, setDropPos] = React.useState({ top: 0, left: 0, width: 0 });
+  const containerRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+
+  const selectedLabel = options.find(o => String(o.value) === String(value))?.label || '';
+  const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
+
+  const openDropdown = () => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    setIsOpen(true);
+    setSearch('');
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setIsOpen(false);
+    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const handleSelect = (opt) => {
+    onChange({ target: { value: opt.value } });
+    setIsOpen(false);
+    setSearch('');
+  };
+
+  return (
+    <div ref={containerRef} className={cn('relative w-full', className)}>
+      <button
+        type="button"
+        onClick={openDropdown}
+        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border border-transparent rounded-xl text-sm font-bold text-gray-800 hover:bg-gray-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-right"
+      >
+        <span className={cn('truncate', !selectedLabel && 'text-gray-400 font-medium')}>{selectedLabel || placeholder}</span>
+        <svg className={cn('w-4 h-4 text-gray-400 transition-transform flex-shrink-0 mr-2', isOpen && 'rotate-180')} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div
+          style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}
+          className="bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden"
+        >
+          <div className="p-2 border-b border-gray-100">
+            <input
+              ref={inputRef}
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="ابحث..."
+              className="w-full px-3 py-2 text-sm bg-gray-50 rounded-lg border border-gray-100 outline-none focus:border-blue-400 font-medium"
+            />
+          </div>
+          <div className="max-h-52 overflow-y-auto custom-scrollbar">
+            {filtered.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-gray-400 text-center">لا توجد نتائج</div>
+            ) : (
+              filtered.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onMouseDown={() => handleSelect(opt)}
+                  className={cn(
+                    'w-full text-right px-4 py-2.5 text-sm font-bold transition-colors hover:bg-blue-50 hover:text-blue-700',
+                    String(opt.value) === String(value) && 'bg-blue-50 text-blue-700'
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -123,7 +123,17 @@ const sidebarGroups = [
       { name: 'مركز المستندات', href: '/documents', icon: FolderOpen },
       { name: 'سجل النشاط', href: '/activity-log', icon: History },
       { name: 'المستخدمون والصلاحيات', href: '/users', icon: ShieldCheck },
-      { name: 'الإعدادات', href: '/settings', icon: Settings },
+      {
+        name: 'الإعدادات',
+        icon: Settings,
+        children: [
+          { name: 'المعلومات والبيانات', href: '/settings/info' },
+          { name: 'الربط مع واتساب', href: '/settings/whatsapp' },
+          { name: 'التخزين والنسخ', href: '/settings/backup' },
+          { name: 'خيارات متقدمة', href: '/settings/advanced' },
+          { name: 'الدعم الفني والخدمات', href: '/settings/support' },
+        ]
+      },
     ]
   }
 ];

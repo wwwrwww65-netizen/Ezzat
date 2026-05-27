@@ -102,6 +102,14 @@
 /* ============================================================
    CUSTOM SCROLLBAR
    ============================================================ */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  {
+  background: var(--color-scrollbar);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-subtle); }
+
 .custom-scrollbar::-webkit-scrollbar        { width: 5px; height: 5px; }
 .custom-scrollbar::-webkit-scrollbar-track  { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb  {

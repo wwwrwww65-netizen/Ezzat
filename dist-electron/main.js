@@ -1,47 +1,197 @@
-import { BrowserWindow as e, app as t, ipcMain as n } from "electron";
-import r from "path";
-import { fileURLToPath as i } from "url";
-import { createRequire as a } from "module";
-import o from "fs";
+import { BrowserWindow, app, ipcMain } from "electron";
+import path from "path";
+import { fileURLToPath } from "url";
+import { createRequire } from "module";
+import fs from "fs";
 //#region electron/main.js
-var s = a(import.meta.url), c = r.dirname(i(import.meta.url)), l = null, u = r.join(t.getPath("userData"), "construction_erp.db"), d = () => {
-	if (l) {
-		let e = l.export();
-		o.writeFileSync(u, Buffer.from(e));
+var require = createRequire(import.meta.url);
+var __dirname = path.dirname(fileURLToPath(import.meta.url));
+var db = null;
+var dbPath = path.join(app.getPath("userData"), "construction_erp.db");
+var saveDb = () => {
+	if (db) {
+		const data = db.export();
+		fs.writeFileSync(dbPath, Buffer.from(data));
 	}
-}, f = async () => {
-	let e = await s("sql.js")();
-	if (o.existsSync(u)) {
-		let t = o.readFileSync(u);
-		l = new e.Database(t);
-	} else l = new e.Database();
-	l.run("\n    CREATE TABLE IF NOT EXISTS projects (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      client_name TEXT,\n      status TEXT,\n      budget REAL,\n      created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n    );\n    CREATE TABLE IF NOT EXISTS blueprints (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      project_id INTEGER,\n      file_path TEXT,\n      scale_factor REAL DEFAULT 100,\n      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE\n    );\n    CREATE TABLE IF NOT EXISTS materials_catalog (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT,\n      unit TEXT,\n      unit_price REAL,\n      waste_factor REAL\n    );\n    CREATE TABLE IF NOT EXISTS labor_catalog (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      crew_type TEXT,\n      daily_rate REAL,\n      daily_production REAL\n    );\n    CREATE TABLE IF NOT EXISTS equipment_catalog (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT,\n      daily_rate REAL,\n      fuel_consumption REAL\n    );\n    CREATE TABLE IF NOT EXISTS takeoff_measurements (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      blueprint_id INTEGER,\n      element_name TEXT,\n      geometry_type TEXT,\n      raw_value REAL,\n      unit TEXT,\n      estimated_cost REAL,\n      estimated_days REAL,\n      FOREIGN KEY(blueprint_id) REFERENCES blueprints(id) ON DELETE CASCADE\n    );\n    CREATE TABLE IF NOT EXISTS settings (\n      key TEXT PRIMARY KEY,\n      value TEXT\n    );\n    CREATE TABLE IF NOT EXISTS suppliers (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      phone TEXT,\n      balance REAL DEFAULT 0,\n      created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n    );\n    CREATE TABLE IF NOT EXISTS inventory_stock (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      material_id INTEGER,\n      warehouse_name TEXT,\n      quantity REAL DEFAULT 0,\n      last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,\n      FOREIGN KEY(material_id) REFERENCES materials_catalog(id)\n    );\n    CREATE TABLE IF NOT EXISTS staff (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      name TEXT NOT NULL,\n      role TEXT,\n      basic_salary REAL DEFAULT 0,\n      join_date DATETIME DEFAULT CURRENT_TIMESTAMP\n    );\n    CREATE TABLE IF NOT EXISTS expenses (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      project_id INTEGER,\n      category TEXT,\n      amount REAL,\n      description TEXT,\n      expense_date DATETIME DEFAULT CURRENT_TIMESTAMP,\n      FOREIGN KEY(project_id) REFERENCES projects(id)\n    );\n    CREATE TABLE IF NOT EXISTS accounting_journal (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      account_code TEXT,\n      debit REAL DEFAULT 0,\n      credit REAL DEFAULT 0,\n      description TEXT,\n      entry_date DATETIME DEFAULT CURRENT_TIMESTAMP\n    );\n    CREATE TABLE IF NOT EXISTS users (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      username TEXT UNIQUE NOT NULL,\n      password TEXT NOT NULL,\n      role TEXT NOT NULL DEFAULT 'user',\n      created_at DATETIME DEFAULT CURRENT_TIMESTAMP\n    );\n    CREATE TABLE IF NOT EXISTS purchases (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      supplier_id INTEGER,\n      invoice_number TEXT,\n      total_amount REAL,\n      paid_amount REAL,\n      purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,\n      FOREIGN KEY(supplier_id) REFERENCES suppliers(id)\n    );\n    CREATE TABLE IF NOT EXISTS purchase_items (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      purchase_id INTEGER,\n      material_id INTEGER,\n      quantity REAL,\n      unit_price REAL,\n      total REAL,\n      FOREIGN KEY(purchase_id) REFERENCES purchases(id),\n      FOREIGN KEY(material_id) REFERENCES materials_catalog(id)\n    );\n    CREATE TABLE IF NOT EXISTS staff_advances (\n      id INTEGER PRIMARY KEY AUTOINCREMENT,\n      staff_id INTEGER,\n      amount REAL,\n      reason TEXT,\n      date DATETIME DEFAULT CURRENT_TIMESTAMP,\n      FOREIGN KEY(staff_id) REFERENCES staff(id)\n    );\n  ");
-	let t = (e) => {
+};
+var initDatabase = async () => {
+	const SQL = await require("sql.js")();
+	if (fs.existsSync(dbPath)) {
+		const fileBuffer = fs.readFileSync(dbPath);
+		db = new SQL.Database(fileBuffer);
+	} else db = new SQL.Database();
+	db.run(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      client_name TEXT,
+      status TEXT,
+      budget REAL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS blueprints (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER,
+      file_path TEXT,
+      scale_factor REAL DEFAULT 100,
+      FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS materials_catalog (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      unit TEXT,
+      unit_price REAL,
+      waste_factor REAL
+    );
+    CREATE TABLE IF NOT EXISTS labor_catalog (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      crew_type TEXT,
+      daily_rate REAL,
+      daily_production REAL
+    );
+    CREATE TABLE IF NOT EXISTS equipment_catalog (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      daily_rate REAL,
+      fuel_consumption REAL
+    );
+    CREATE TABLE IF NOT EXISTS takeoff_measurements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      blueprint_id INTEGER,
+      element_name TEXT,
+      geometry_type TEXT,
+      raw_value REAL,
+      unit TEXT,
+      estimated_cost REAL,
+      estimated_days REAL,
+      FOREIGN KEY(blueprint_id) REFERENCES blueprints(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+    CREATE TABLE IF NOT EXISTS suppliers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      phone TEXT,
+      balance REAL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS inventory_stock (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      material_id INTEGER,
+      warehouse_name TEXT,
+      quantity REAL DEFAULT 0,
+      last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(material_id) REFERENCES materials_catalog(id)
+    );
+    CREATE TABLE IF NOT EXISTS staff (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      role TEXT,
+      basic_salary REAL DEFAULT 0,
+      join_date DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS expenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER,
+      category TEXT,
+      amount REAL,
+      description TEXT,
+      expense_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(project_id) REFERENCES projects(id)
+    );
+    CREATE TABLE IF NOT EXISTS accounting_journal (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_code TEXT,
+      debit REAL DEFAULT 0,
+      credit REAL DEFAULT 0,
+      description TEXT,
+      entry_date DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS purchases (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      supplier_id INTEGER,
+      invoice_number TEXT,
+      total_amount REAL,
+      paid_amount REAL,
+      purchase_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(supplier_id) REFERENCES suppliers(id)
+    );
+    CREATE TABLE IF NOT EXISTS purchase_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      purchase_id INTEGER,
+      material_id INTEGER,
+      quantity REAL,
+      unit_price REAL,
+      total REAL,
+      FOREIGN KEY(purchase_id) REFERENCES purchases(id),
+      FOREIGN KEY(material_id) REFERENCES materials_catalog(id)
+    );
+    CREATE TABLE IF NOT EXISTS staff_advances (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      staff_id INTEGER,
+      amount REAL,
+      reason TEXT,
+      date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(staff_id) REFERENCES staff(id)
+    );
+  `);
+	try {
+		db.run("ALTER TABLE purchases ADD COLUMN delivery_status TEXT DEFAULT 'pending'");
+	} catch (e) {}
+	try {
+		db.run("ALTER TABLE purchases ADD COLUMN delivery_date DATETIME");
+	} catch (e) {}
+	try {
+		db.run("ALTER TABLE purchases ADD COLUMN received_at DATETIME");
+	} catch (e) {}
+	try {
+		db.run("ALTER TABLE purchases ADD COLUMN notes TEXT");
+	} catch (e) {}
+	try {
+		db.run("ALTER TABLE materials_catalog ADD COLUMN cost_per_unit REAL DEFAULT 0");
+	} catch (e) {}
+	const seedRows = (sql) => {
 		try {
-			let t = l.prepare(e);
-			t.step();
-			let n = t.getAsObject();
-			return t.free(), n;
-		} catch {
+			const stmt = db.prepare(sql);
+			stmt.step();
+			const row = stmt.getAsObject();
+			stmt.free();
+			return row;
+		} catch (e) {
 			return { count: 0 };
 		}
-	}, n = t("SELECT count(*) as count FROM users");
-	(!n.count || n.count == 0) && l.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", [
+	};
+	const userCount = seedRows("SELECT count(*) as count FROM users");
+	if (!userCount.count || userCount.count == 0) db.run("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", [
 		"admin",
 		"admin123",
 		"admin"
 	]);
-	let r = t("SELECT count(*) as count FROM projects");
-	(!r.count || r.count == 0) && (l.run("INSERT INTO projects (name, client_name, status, budget) VALUES (?, ?, ?, ?)", [
-		"مشروع فيلا سكنية - الرياض",
-		"أحمد محمد",
-		"نشط",
-		15e5
-	]), l.run("INSERT INTO blueprints (project_id, file_path, scale_factor) VALUES (?, ?, ?)", [
-		1,
-		"demo-blueprint.pdf",
-		100
-	])), l.run("DELETE FROM materials_catalog"), [
+	const projCount = seedRows("SELECT count(*) as count FROM projects");
+	if (!projCount.count || projCount.count == 0) {
+		db.run("INSERT INTO projects (name, client_name, status, budget) VALUES (?, ?, ?, ?)", [
+			"مشروع فيلا سكنية - الرياض",
+			"أحمد محمد",
+			"نشط",
+			15e5
+		]);
+		db.run("INSERT INTO blueprints (project_id, file_path, scale_factor) VALUES (?, ?, ?)", [
+			1,
+			"demo-blueprint.pdf",
+			100
+		]);
+	}
+	db.run("DELETE FROM materials_catalog");
+	[
 		[
 			"حفر وترحيل",
 			"م3",
@@ -330,9 +480,11 @@ var s = a(import.meta.url), c = r.dirname(i(import.meta.url)), l = null, u = r.j
 			2500,
 			0
 		]
-	].forEach((e) => {
-		l.run("INSERT INTO materials_catalog (name, unit, unit_price, waste_factor) VALUES (?, ?, ?, ?)", e);
-	}), l.run("DELETE FROM labor_catalog"), [
+	].forEach((m) => {
+		db.run("INSERT INTO materials_catalog (name, unit, unit_price, waste_factor) VALUES (?, ?, ?, ?)", m);
+	});
+	db.run("DELETE FROM labor_catalog");
+	[
 		[
 			"طاقم بناء بلك",
 			600,
@@ -353,9 +505,11 @@ var s = a(import.meta.url), c = r.dirname(i(import.meta.url)), l = null, u = r.j
 			200,
 			30
 		]
-	].forEach((e) => {
-		l.run("INSERT INTO labor_catalog (crew_type, daily_rate, daily_production) VALUES (?, ?, ?)", e);
-	}), l.run("DELETE FROM equipment_catalog"), [
+	].forEach((l) => {
+		db.run("INSERT INTO labor_catalog (crew_type, daily_rate, daily_production) VALUES (?, ?, ?)", l);
+	});
+	db.run("DELETE FROM equipment_catalog");
+	[
 		[
 			"حفارة بوكلين",
 			1200,
@@ -377,8 +531,10 @@ var s = a(import.meta.url), c = r.dirname(i(import.meta.url)), l = null, u = r.j
 			300
 		]
 	].forEach((e) => {
-		l.run("INSERT INTO equipment_catalog (name, daily_rate, fuel_consumption) VALUES (?, ?, ?)", e);
-	}), l.run("DELETE FROM takeoff_measurements"), [
+		db.run("INSERT INTO equipment_catalog (name, daily_rate, fuel_consumption) VALUES (?, ?, ?)", e);
+	});
+	db.run("DELETE FROM takeoff_measurements");
+	[
 		[
 			1,
 			"بناء جدران الدور الأرضي (بلك معزول)",
@@ -424,42 +580,58 @@ var s = a(import.meta.url), c = r.dirname(i(import.meta.url)), l = null, u = r.j
 			400 * 85,
 			10
 		]
-	].forEach((e) => {
-		l.run("INSERT INTO takeoff_measurements (blueprint_id, element_name, geometry_type, raw_value, unit, estimated_cost, estimated_days) VALUES (?, ?, ?, ?, ?, ?, ?)", e);
-	}), d(), console.log("✅ قاعدة البيانات جاهزة:", u);
-}, p = (e, t = []) => {
+	].forEach((t) => {
+		db.run("INSERT INTO takeoff_measurements (blueprint_id, element_name, geometry_type, raw_value, unit, estimated_cost, estimated_days) VALUES (?, ?, ?, ?, ?, ?, ?)", t);
+	});
+	saveDb();
+	console.log("✅ قاعدة البيانات جاهزة:", dbPath);
+};
+var queryDb = (sql, params = []) => {
 	try {
-		let n = l.prepare(e);
-		t && t.length > 0 && n.bind(t);
-		let r = [];
-		for (; n.step();) r.push(n.getAsObject());
-		return n.free(), r;
-	} catch (t) {
-		return console.error("DB Query Error:", e, t), [];
-	}
-}, m = (e, t = []) => {
-	try {
-		return l.run(e, t), d(), { success: !0 };
-	} catch (t) {
-		throw console.error("DB Execute Error:", e, t), t;
+		const stmt = db.prepare(sql);
+		if (params && params.length > 0) stmt.bind(params);
+		const rows = [];
+		while (stmt.step()) rows.push(stmt.getAsObject());
+		stmt.free();
+		return rows;
+	} catch (err) {
+		console.error("DB Query Error:", sql, err);
+		return [];
 	}
 };
-function h() {
-	let t = new e({
+var executeDb = (sql, params = []) => {
+	try {
+		db.run(sql, params);
+		saveDb();
+		return { success: true };
+	} catch (err) {
+		console.error("DB Execute Error:", sql, err);
+		throw err;
+	}
+};
+function createWindow() {
+	const win = new BrowserWindow({
 		width: 1400,
 		height: 900,
-		show: !1,
+		show: false,
+		autoHideMenuBar: true,
 		webPreferences: {
-			preload: r.join(c, "preload.js"),
-			nodeIntegration: !1,
-			contextIsolation: !0
+			preload: path.join(__dirname, "preload.js"),
+			nodeIntegration: false,
+			contextIsolation: true
 		}
 	});
-	t.once("ready-to-show", () => t.show()), process.env.VITE_DEV_SERVER_URL ? (t.loadURL(process.env.VITE_DEV_SERVER_URL), t.webContents.openDevTools({ mode: "detach" })) : t.loadFile(r.join(c, "../dist/index.html"));
+	win.once("ready-to-show", () => win.show());
+	if (process.env.VITE_DEV_SERVER_URL) win.loadURL(process.env.VITE_DEV_SERVER_URL);
+	else win.loadFile(path.join(__dirname, "../dist/index.html"));
 }
-t.whenReady().then(async () => {
-	await f(), h();
-}), t.on("window-all-closed", () => {
-	process.platform !== "darwin" && t.quit();
-}), n.handle("db:query", (e, t, n) => p(t, n || [])), n.handle("db:execute", (e, t, n) => m(t, n || []));
+app.whenReady().then(async () => {
+	await initDatabase();
+	createWindow();
+});
+app.on("window-all-closed", () => {
+	if (process.platform !== "darwin") app.quit();
+});
+ipcMain.handle("db:query", (event, sql, params) => queryDb(sql, params || []));
+ipcMain.handle("db:execute", (event, sql, params) => executeDb(sql, params || []));
 //#endregion

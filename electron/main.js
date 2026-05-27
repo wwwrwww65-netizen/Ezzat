@@ -157,6 +157,13 @@ const initDatabase = async () => {
     );
   `);
 
+  // Migration: Add delivery workflow columns to purchases if not exist
+  try { db.run("ALTER TABLE purchases ADD COLUMN delivery_status TEXT DEFAULT 'pending'"); } catch(e) {}
+  try { db.run("ALTER TABLE purchases ADD COLUMN delivery_date DATETIME"); } catch(e) {}
+  try { db.run("ALTER TABLE purchases ADD COLUMN received_at DATETIME"); } catch(e) {}
+  try { db.run("ALTER TABLE purchases ADD COLUMN notes TEXT"); } catch(e) {}
+  try { db.run("ALTER TABLE materials_catalog ADD COLUMN cost_per_unit REAL DEFAULT 0"); } catch(e) {}
+
   // Seed Data - البيانات الأساسية الافتراضية
   const seedRows = (sql) => {
     try {
@@ -327,6 +334,7 @@ function createWindow() {
     width: 1400,
     height: 900,
     show: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -338,7 +346,7 @@ function createWindow() {
 
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL);
-    win.webContents.openDevTools({ mode: 'detach' });
+    // win.webContents.openDevTools({ mode: 'detach' });
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
   }

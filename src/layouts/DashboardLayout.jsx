@@ -7,7 +7,7 @@ export default function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc] dark:bg-[#0b0f19] transition-colors duration-200" dir="rtl">
+    <div className="flex h-screen overflow-hidden bg-[#f8fafc] dark:bg-[#0b0f19] transition-colors duration-200" dir="rtl">
       <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Topbar onMenuClick={() => setIsSidebarOpen(true)} />

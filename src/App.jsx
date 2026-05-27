@@ -69,7 +69,8 @@ function App() {
           <Route path="/employees" element={<Employees />} />
           <Route path="/finance" element={<Finance />} />
           <Route path="/invoices" element={<Invoices />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings" element={<Navigate to="/settings/info" />} />
+          <Route path="/settings/:tab" element={<Settings />} />
           <Route path="/subcontractors" element={<Subcontractors />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/bonds" element={<Bonds />} />
@@ -83,7 +84,6 @@ function App() {
           <Route path="/labor" element={<Labor />} />
           <Route path="/equipment" element={<Equipment />} />
           <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Settings />} />
           <Route path="/users" element={<Users />} />
           <Route path="/activity-log" element={<ActivityLog />} />
           <Route path="/files" element={<ProjectFiles />} />
