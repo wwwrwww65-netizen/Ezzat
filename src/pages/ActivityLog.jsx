@@ -1,72 +1,35 @@
-import React, { useState } from 'react';
-import { Card, Badge, Table, Button, Input, Select } from '../components/UI';
-import { useData } from '../context/DataContext';
-import {
-  History,
-  Search,
-  Filter,
-  User,
-  Clock,
-  Globe,
-  FileText,
-  AlertCircle,
-  Download,
-  Trash2,
-  Calendar
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Card, Badge, Table, Input, Select, Button } from '../components/UI';
+import { History, Search, Filter, Calendar, Clock } from 'lucide-react';
 
 export default function ActivityLog() {
-  const { activityLog, setData } = useData();
+  const [activityLog, setActivityLog] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const clearLog = () => {
-    if (window.confirm('هل أنت متأكد من رغبتك في مسح كافة سجلات النشاط؟ لا يمكن التراجع عن هذه الخطوة.')) {
-      setData(prev => ({ ...prev, activityLog: [] }));
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const fetchLogs = async () => {
+    if (window.electronAPI) {
+      const logs = await window.electronAPI.queryDb("SELECT * FROM activity_log ORDER BY id DESC");
+      setActivityLog(logs);
     }
   };
 
+  const filteredLogs = (activityLog || []).filter(log => 
+    log.user?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.action?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <History className="w-8 h-8 text-primary-600" />
         <div>
-          <h1 className="text-2xl font-black text-gray-800 tracking-tight">سجل النشاط والتدقيق</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">مراقبة كافة العمليات والتغييرات التي تتم داخل النظام</p>
+          <h1 className="text-2xl font-bold text-gray-800">سجل النشاطات</h1>
+          <p className="text-sm text-gray-500 mt-1">تتبع كافة تحركات المستخدمين وتعديلات النظام.</p>
         </div>
-        <div className="flex gap-2">
-           <Button variant="secondary" className="rounded-xl"><Download className="w-4 h-4" /> تصدير السجل</Button>
-           <Button variant="danger" className="rounded-xl" onClick={clearLog}><Trash2 className="w-4 h-4" /> مسح السجل</Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-         <Card className="p-4 border-none shadow-sm flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-blue-50 text-blue-600"><History className="w-6 h-6" /></div>
-            <div>
-               <p className="text-[10px] text-gray-400 font-bold uppercase">إجمالي العمليات</p>
-               <p className="text-xl font-black">{activityLog.length}</p>
-            </div>
-         </Card>
-         <Card className="p-4 border-none shadow-sm flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600"><User className="w-6 h-6" /></div>
-            <div>
-               <p className="text-[10px] text-gray-400 font-bold uppercase">مستخدمين نشطين</p>
-               <p className="text-xl font-black">4</p>
-            </div>
-         </Card>
-         <Card className="p-4 border-none shadow-sm flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-amber-50 text-amber-600"><AlertCircle className="w-6 h-6" /></div>
-            <div>
-               <p className="text-[10px] text-gray-400 font-bold uppercase">تغييرات حساسة</p>
-               <p className="text-xl font-black">12</p>
-            </div>
-         </Card>
-         <Card className="p-4 border-none shadow-sm flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-purple-50 text-purple-600"><Globe className="w-6 h-6" /></div>
-            <div>
-               <p className="text-[10px] text-gray-400 font-bold uppercase">عناوين IP</p>
-               <p className="text-xl font-black">8</p>
-            </div>
-         </Card>
       </div>
 
       <Card>
@@ -98,7 +61,7 @@ export default function ActivityLog() {
                </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-               {activityLog.filter(log => log.action.includes(searchTerm) || log.user.includes(searchTerm)).map(log => (
+               {filteredLogs.map(log => (
                  <tr key={log.id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-6 py-4">
                        <div className="flex items-center gap-2">
@@ -121,6 +84,11 @@ export default function ActivityLog() {
                     </td>
                  </tr>
                ))}
+               {filteredLogs.length === 0 && (
+                 <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center text-gray-400 font-medium">لا توجد نشاطات مسجلة</td>
+                 </tr>
+               )}
             </tbody>
           </table>
         </div>

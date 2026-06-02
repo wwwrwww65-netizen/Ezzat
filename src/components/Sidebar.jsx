@@ -112,7 +112,18 @@ const sidebarGroups = [
     title: 'الموارد البشرية والأصول',
     items: [
       { name: 'العمالة', href: '/labor', icon: HardHat },
-      { name: 'الموظفون', href: '/employees', icon: UserSquare2 },
+      {
+        name: 'شؤون الموظفين',
+        icon: UserSquare2,
+        children: [
+          { name: 'دليل الموظفين', href: '/employees' },
+          { name: 'مسير الرواتب', href: '/employees/payroll' },
+          { name: 'سجل العمليات', href: '/employees/history' },
+          { name: 'أرشيف السندات', href: '/employees/vouchers' },
+          { name: 'قواعد الجزاءات', href: '/employees/penalties' },
+          { name: 'الوظائف والصلاحيات', href: '/employees/job-roles' },
+        ]
+      },
       { name: 'المعدات', href: '/equipment', icon: Construction },
     ]
   },
@@ -130,6 +141,7 @@ const sidebarGroups = [
           { name: 'المعلومات والبيانات', href: '/settings/info' },
           { name: 'الربط مع واتساب', href: '/settings/whatsapp' },
           { name: 'التخزين والنسخ', href: '/settings/backup' },
+          { name: 'الذكاء الاصطناعي', href: '/settings/ai' },
           { name: 'خيارات متقدمة', href: '/settings/advanced' },
           { name: 'الدعم الفني والخدمات', href: '/settings/support' },
         ]

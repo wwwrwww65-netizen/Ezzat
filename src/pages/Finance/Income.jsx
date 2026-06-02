@@ -11,7 +11,7 @@ const parseAmount = (val) => {
 };
 
 export default function Income() {
-  const { income, addItem, deleteItem } = useData();
+  const [income, setIncome] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,18 +22,38 @@ export default function Income() {
     status: 'مؤكد'
   });
 
+  React.useEffect(() => {
+    fetchIncome();
+  }, []);
+
+  const fetchIncome = async () => {
+    if (window.electronAPI) {
+      const data = await window.electronAPI.queryDb("SELECT * FROM income ORDER BY id DESC");
+      setIncome(data);
+    }
+  };
+
+  const deleteItem = async (type, id) => {
+    if (window.electronAPI && confirm('هل أنت متأكد من الحذف؟')) {
+      await window.electronAPI.executeDb("DELETE FROM income WHERE id = ?", [id]);
+      fetchIncome();
+    }
+  };
+
   const filteredIncome = (income || []).filter(item =>
     item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.method.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    addItem('income', {
-      ...formData,
-      id: Date.now(),
-      amount: parseFloat(formData.amount) || 0
-    });
+    if (!window.electronAPI) return;
+    
+    await window.electronAPI.executeDb(
+      "INSERT INTO income (title, method, date, amount, status) VALUES (?, ?, ?, ?, ?)",
+      [formData.title, formData.method, formData.date, parseFloat(formData.amount) || 0, formData.status]
+    );
+
     setIsModalOpen(false);
     setFormData({
       title: '',
@@ -42,6 +62,7 @@ export default function Income() {
       date: new Date().toISOString().split('T')[0],
       status: 'مؤكد'
     });
+    fetchIncome();
   };
 
   const totalIncome = (income || []).reduce((acc, curr) => {

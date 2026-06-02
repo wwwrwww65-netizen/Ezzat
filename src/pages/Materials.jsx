@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Badge, Table, Button, Input, Modal, Select } from '../components/UI';
 import { useData } from '../context/DataContext';
 import {
@@ -31,7 +31,10 @@ const commonSpecNames = [
 ];
 
 export default function Materials() {
-  const { inventory, categories, addItem, deleteItem } = useData();
+  const [inventory, setInventory] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -44,6 +47,33 @@ export default function Materials() {
     sellPrice: 0,
     customSpecs: [] // Array of { id, name, value }
   });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    if (!window.electronAPI) return;
+    setLoading(true);
+    try {
+      const mats = await window.electronAPI.queryDb('SELECT * FROM materials_catalog');
+      const cats = await window.electronAPI.queryDb('SELECT * FROM categories');
+      setInventory(mats);
+      setCategories(cats);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteMaterial = async (id) => {
+    if (!window.electronAPI) return;
+    if (confirm('هل أنت متأكد من حذف هذه المادة؟')) {
+      await window.electronAPI.executeDb('DELETE FROM materials_catalog WHERE id = ?', [id]);
+      fetchData();
+    }
+  };
 
   const filtered = inventory.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -99,23 +129,25 @@ export default function Materials() {
     }));
   };
 
-  const handleAddOrEditMaterial = (e) => {
+  const handleAddOrEditMaterial = async (e) => {
     e.preventDefault();
+    if (!window.electronAPI) return;
+
     if (editingId) {
-       deleteItem('inventory', editingId);
+       await window.electronAPI.executeDb(
+         'UPDATE materials_catalog SET name=?, category_id=?, unit=?, buy_price=?, sell_price=? WHERE id=?',
+         [formData.name, formData.categoryId, formData.unit, formData.buyPrice, formData.sellPrice, editingId]
+       );
+    } else {
+       await window.electronAPI.executeDb(
+         'INSERT INTO materials_catalog (name, category_id, unit, buy_price, sell_price) VALUES (?,?,?,?,?)',
+         [formData.name, formData.categoryId, formData.unit, formData.buyPrice, formData.sellPrice]
+       );
     }
-    
-    addItem('inventory', {
-      ...formData,
-      id: editingId || Date.now(),
-      categoryId: Number(formData.categoryId) || 1,
-      type: 'مخزني',
-      status: 'متوفر',
-      quantity: 0
-    });
     
     setShowAddModal(false);
     resetForm();
+    fetchData();
   };
 
   const resetForm = () => {
@@ -132,10 +164,10 @@ export default function Materials() {
     setEditingId(item.id);
     setFormData({
       name: item.name,
-      categoryId: item.categoryId || '',
+      categoryId: item.category_id || '',
       unit: item.unit || 'متر مربع',
-      buyPrice: item.buyPrice || 0,
-      sellPrice: item.sellPrice || 0,
+      buyPrice: item.buy_price || 0,
+      sellPrice: item.sell_price || 0,
       customSpecs: item.customSpecs || []
     });
     setShowAddModal(true);
@@ -189,16 +221,16 @@ export default function Materials() {
                    </div>
                 </td>
                 <td className="px-6 py-4">
-                   <Badge variant="neutral">{categories.find(c => c.id === item.categoryId)?.name || 'عام'}</Badge>
+                   <Badge variant="neutral">{categories.find(c => c.id === item.category_id)?.name || 'عام'}</Badge>
                 </td>
                 <td className="px-6 py-4 text-sm font-medium text-gray-500">{item.unit}</td>
-                <td className="px-6 py-4 font-black text-gray-700">{item.buyPrice} ر.س</td>
-                <td className="px-6 py-4 font-black text-primary-600">{item.sellPrice} ر.س</td>
+                <td className="px-6 py-4 font-black text-gray-700">{item.buy_price} ر.س</td>
+                <td className="px-6 py-4 font-black text-primary-600">{item.sell_price} ر.س</td>
                 <td className="px-6 py-4"><Badge variant="success">نشط</Badge></td>
                 <td className="px-6 py-4">
                    <div className="flex gap-2">
                       <button onClick={() => openEditModal(item)} className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors" title="تعديل"><Edit className="w-4 h-4" /></button>
-                      <button onClick={() => deleteItem('inventory', item.id)} className="p-1.5 text-gray-400 hover:text-red-600 transition-colors" title="حذف"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => deleteMaterial(item.id)} className="p-1.5 text-gray-400 hover:text-red-600 transition-colors" title="حذف"><Trash2 className="w-4 h-4" /></button>
                    </div>
                 </td>
              </tr>

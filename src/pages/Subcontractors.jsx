@@ -1,17 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Badge, Table, Button, Input, Modal, Select } from '../components/UI';
-import { useData } from '../context/DataContext';
 import { HardHat, Plus, Search, Trash2, Edit, CheckCircle2, MapPin, Phone } from 'lucide-react';
 
 export default function Subcontractors() {
-  // Use inventory or employees as base, but we will store subcontractors in suppliers if there isn't a dedicated array
-  // For now, let's use suppliers context as they are similar, or create a mock array if missing
-  const { suppliers, addItem, deleteItem } = useData();
+  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  
-  // Filter suppliers to only show subcontractors (category = مقاول باطن)
-  const subcontractors = (suppliers || []).filter(s => s.category === 'مقاول باطن');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -21,17 +16,48 @@ export default function Subcontractors() {
     category: 'مقاول باطن'
   });
 
-  const handleAdd = (e) => {
-    e.preventDefault();
-    addItem('suppliers', {
-      ...formData,
-      id: Date.now()
-    });
-    setShowAddModal(false);
-    setFormData({ name: '', phone: '', specialty: 'كهرباء', status: 'نشط', category: 'مقاول باطن' });
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    if (!window.electronAPI) return;
+    setLoading(true);
+    try {
+      const rows = await window.electronAPI.queryDb("SELECT * FROM suppliers WHERE category = 'مقاول باطن'");
+      setSuppliers(rows);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filtered = subcontractors.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!window.electronAPI) return;
+    try {
+      await window.electronAPI.executeDb(
+        'INSERT INTO suppliers (name, phone, category, status, contact_info) VALUES (?,?,?,?,?)',
+        [formData.name, formData.phone, 'مقاول باطن', formData.status, formData.specialty]
+      );
+      setShowAddModal(false);
+      setFormData({ name: '', phone: '', specialty: 'كهرباء', status: 'نشط', category: 'مقاول باطن' });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteItem = async (id) => {
+    if (!window.electronAPI) return;
+    if (confirm('هل أنت متأكد من حذف هذا المقاول؟')) {
+      await window.electronAPI.executeDb('DELETE FROM suppliers WHERE id = ?', [id]);
+      fetchData();
+    }
+  };
+
+  const filtered = suppliers.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="space-y-6">
@@ -66,7 +92,7 @@ export default function Subcontractors() {
           {filtered.map(sub => (
             <tr key={sub.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 font-bold text-gray-800">{sub.name}</td>
-              <td className="px-6 py-4 text-gray-600">{sub.specialty}</td>
+              <td className="px-6 py-4 text-gray-600">{sub.contact_info}</td>
               <td className="px-6 py-4 text-gray-600">{sub.phone}</td>
               <td className="px-6 py-4">
                 <Badge variant={sub.status === 'نشط' ? 'success' : 'neutral'}>{sub.status}</Badge>

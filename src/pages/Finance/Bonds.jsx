@@ -16,8 +16,29 @@ import {
 } from 'lucide-react';
 
 export default function Bonds() {
-  const { bonds, projects, addItem, deleteItem } = useData();
+  const [data, setData] = useState({ bonds: [], projects: [] });
   const [showAddModal, setShowAddModal] = useState(false);
+
+  React.useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    if (window.electronAPI) {
+      const [bonds, projects] = await Promise.all([
+        window.electronAPI.queryDb("SELECT * FROM bonds ORDER BY id DESC"),
+        window.electronAPI.queryDb("SELECT * FROM projects")
+      ]);
+      setData({ bonds, projects });
+    }
+  };
+
+  const deleteItem = async (type, id) => {
+    if (window.electronAPI && confirm('هل أنت متأكد من الحذف؟')) {
+      await window.electronAPI.executeDb("DELETE FROM bonds WHERE id = ?", [id]);
+      fetchData();
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -40,13 +61,13 @@ export default function Bonds() {
 
       <Card>
         <Table headers={['رقم السند', 'النوع', 'المستلم / المسلم', 'المبلغ', 'التاريخ', 'الحساب', 'الحالة', 'إجراءات']}>
-          {bonds.map((bond) => (
+          {data.bonds.map((bond) => (
             <tr key={bond.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 font-bold text-gray-900">{bond.id}</td>
               <td className="px-6 py-4">
                 <Badge variant={bond.type === 'قبض' ? 'success' : 'danger'}>{bond.type}</Badge>
               </td>
-              <td className="px-6 py-4 text-sm font-medium text-gray-800">{bond.entityName}</td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-800">{bond.entity_name}</td>
               <td className="px-6 py-4 font-bold">{Number(bond.amount).toLocaleString()} ر.س</td>
               <td className="px-6 py-4 text-sm text-gray-500">{bond.date}</td>
               <td className="px-6 py-4 text-xs text-gray-500 font-medium">{bond.account}</td>
@@ -92,11 +113,11 @@ export default function Bonds() {
             />
             <Select label="الحساب" options={[{ label: 'البنك الأهلي', value: 'snv' }, { label: 'مصرف الراجحي', value: 'rajhi' }]} />
           </div>
-          <Select label="المشروع المرتبط" options={projects.map(p => ({ label: p.name, value: p.id }))} />
+          <Select label="المشروع المرتبط" options={data.projects.map(p => ({ label: p.name, value: p.id }))} />
           <textarea className="w-full p-3 border border-gray-300 rounded-xl text-sm" placeholder="ملاحظات السند..." rows="3"></textarea>
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setShowAddModal(false)}>إلغاء</Button>
-            <Button variant="primary">حفظ واعتماد</Button>
+            <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>إلغاء</Button>
+            <Button variant="primary" type="button" onClick={() => setShowAddModal(false)}>حفظ واعتماد</Button>
           </div>
         </form>
       </Modal>

@@ -33,8 +33,8 @@ const calculateItemQuantity = (item, spatial) => {
 
   const name = item.name || '';
   const unit = item.unit || '';
-  const buyPrice = Number(item.buyPrice) || 0;
-  const specs = item.customSpecs || [];
+  const buyPrice = Number(item.buy_price) || 0;
+  const specs = item.custom_specs || [];
 
   let quantity = 0;
   let geometry_type = 'مساحة';
@@ -373,16 +373,42 @@ export const runFullCalculation = (spatialData, selectedItems, selectedLabors, s
   // --- حساب المواد ---
   const measurements = selectedItems.map(item => calculateItemQuantity(item, spatial));
 
-  // --- حساب العمالة ---
+  // --- حساب العمالة التسلسلي ---
   const duration = calculateDuration(spatial, selectedLabors);
-  const laborBreakdown = selectedLabors.map(labor => {
-    const dailyRate = Number(labor.dailyRate) || 150;
-    // عدد أيام العامل = مدة المشروع (كل عامل طوال المشروع)
-    const workerDays = duration;
+  const laborBreakdown = selectedLabors.map((labor, index) => {
+    const dailyRate = Number(labor.daily_rate) || 150;
+    const name = labor.profession || labor.name || '';
+    
+    // تقسيم المهام تسلسلياً حسب نوع المهنة
+    let startDayRatio = 0;
+    let endDayRatio = 1;
+    
+    if (name.includes('حفر') || name.includes('مساح') || name.includes('سائق') || name.includes('معدات')) {
+      startDayRatio = 0; endDayRatio = 0.15;
+    } else if (name.includes('نجار') || name.includes('حداد') || name.includes('بناء') || name.includes('خرسانة')) {
+      startDayRatio = 0.10; endDayRatio = 0.50;
+    } else if (name.includes('سباك') || name.includes('كهربائي') || name.includes('تكييف')) {
+      startDayRatio = 0.40; endDayRatio = 0.70;
+    } else if (name.includes('مبلط') || name.includes('دهان') || name.includes('جبس') || name.includes('تشطيب')) {
+      startDayRatio = 0.65; endDayRatio = 1.0;
+    } else {
+      const step = 1 / Math.max(selectedLabors.length, 1);
+      startDayRatio = index * step;
+      endDayRatio = Math.min(1.0, (index + 1) * step + 0.1); 
+    }
+    
+    const startDay = Math.floor(duration * startDayRatio);
+    let endDay = Math.ceil(duration * endDayRatio);
+    if (endDay > duration) endDay = duration;
+    
+    const workerDays = Math.max(1, endDay - startDay);
     const cost = parseFloat((workerDays * dailyRate).toFixed(2));
+    
     return {
-      profession: labor.profession || labor.name,
+      profession: name,
       count: 1,
+      startDay,
+      endDay,
       days: workerDays,
       cost
     };
@@ -390,19 +416,36 @@ export const runFullCalculation = (spatialData, selectedItems, selectedLabors, s
 
   // --- حساب المعدات ---
   const equipmentBreakdown = selectedEquipments.map(equip => {
-    const dailyCost = Number(equip.dailyCost) || 500;
-    // المعدات تعمل أول 40% من المشروع (مرحلة الهيكل)
-    const equipDays = Math.ceil(duration * 0.4);
+    const dailyCost = Number(equip.daily_cost) || 500;
+    // المعدات تعمل في الغالب في البداية (الحفر والأساسات)
+    const startDay = 0;
+    const endDay = Math.ceil(duration * 0.3);
+    const equipDays = Math.max(1, endDay - startDay);
     const cost = parseFloat((equipDays * dailyCost).toFixed(2));
     return {
       equipment: equip.name,
       count: 1,
+      startDay,
+      endDay,
       days: equipDays,
       cost
     };
   });
 
-  // --- المجاميع ---
+  // --- استخراج جدول المهام من الذكاء الاصطناعي ---
+  const tasksSchedule = (spatialData.proposed_schedule || []).map(phase => {
+    const startDay = Math.floor(duration * (phase.start_ratio || 0));
+    let endDay = Math.ceil(duration * (phase.end_ratio || 1));
+    if (endDay > duration) endDay = duration;
+    const taskDays = Math.max(1, endDay - startDay);
+    return {
+      task_name: phase.phase_name,
+      startDay,
+      endDay,
+      days: taskDays
+    };
+  });
+
   const totalMaterialCost = measurements.reduce((s, m) => s + (m.estimated_cost || 0), 0);
   const totalLaborCost = laborBreakdown.reduce((s, l) => s + (l.cost || 0), 0);
   const totalEquipCost = equipmentBreakdown.reduce((s, e) => s + (e.cost || 0), 0);
@@ -419,6 +462,7 @@ export const runFullCalculation = (spatialData, selectedItems, selectedLabors, s
     workers: selectedLabors.length,
     laborBreakdown,
     equipmentBreakdown,
+    tasksSchedule,
     summary,
     readingConfidence: spatialData.readingConfidence || 'medium',
     error: null

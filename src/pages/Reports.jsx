@@ -22,7 +22,11 @@ import {
 } from 'recharts';
 
 export default function Reports() {
-  const { projects, clients, inventory, invoices, expenses, theme } = useData();
+  const [data, setData] = React.useState({
+    projects: [], clients: [], inventory: [], invoices: [], expenses: []
+  });
+
+  const { theme } = useData();
   const [reportType, setReportType] = useState('financial');
   const isDark = theme === 'dark';
   const chartGrid   = isDark ? '#30363d' : '#f1f5f9';
@@ -31,6 +35,22 @@ export default function Reports() {
   const tooltip     = isDark
     ? { borderRadius: '16px', border: '1px solid #30363d', boxShadow: '0 20px 25px rgba(0,0,0,0.5)', padding: '12px', backgroundColor: '#161b22', color: '#e6edf3' }
     : { borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' };
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      if (window.electronAPI) {
+        const [projects, clients, inventory, invoices, expenses] = await Promise.all([
+          window.electronAPI.queryDb("SELECT * FROM projects"),
+          window.electronAPI.queryDb("SELECT * FROM clients"),
+          window.electronAPI.queryDb("SELECT * FROM inventory_stock"),
+          window.electronAPI.queryDb("SELECT * FROM invoices"),
+          window.electronAPI.queryDb("SELECT * FROM expenses")
+        ]);
+        setData({ projects, clients, inventory, invoices, expenses });
+      }
+    };
+    fetchData();
+  }, []);
 
   const financialData = [
     { name: 'يناير', income: 450000, expense: 280000 },
@@ -41,10 +61,10 @@ export default function Reports() {
   ];
 
   const projectStatusData = [
-    { name: 'نشط', value: projects.filter(p => p.status === 'نشط').length },
-    { name: 'مكتمل', value: projects.filter(p => p.status === 'مكتمل').length },
-    { name: 'متأخر', value: projects.filter(p => p.status === 'متأخر').length },
-    { name: 'بالانتظار', value: projects.filter(p => p.status === 'قيد الانتظار').length },
+    { name: 'نشط', value: data.projects.filter(p => p.status === 'نشط').length },
+    { name: 'مكتمل', value: data.projects.filter(p => p.status === 'مكتمل').length },
+    { name: 'متأخر', value: data.projects.filter(p => p.status === 'متأخر').length },
+    { name: 'بالانتظار', value: data.projects.filter(p => p.status === 'قيد الانتظار').length },
   ];
 
   const COLORS = ['#1e3a8a', '#10b981', '#ef4444', '#f59e0b'];
@@ -154,7 +174,7 @@ export default function Reports() {
            </div>
         </div>
         <Table headers={['المعرف', 'البيان', 'التاريخ', 'القيمة الإجمالية', 'الضريبة', 'الحالة']}>
-          {invoices.map(inv => (
+          {data.invoices.map(inv => (
             <tr key={inv.id}>
               <td className="px-6 py-4 font-bold text-gray-900">{inv.id}</td>
               <td className="px-6 py-4 text-sm font-medium text-gray-600">{inv.clientName}</td>

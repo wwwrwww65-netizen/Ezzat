@@ -3,11 +3,11 @@ import * as pdfjsLib from 'pdfjs-dist';
 import * as fabricModule from 'fabric';
 const fabric = fabricModule.fabric || fabricModule;
 
-import { Upload, Square, Ruler, MousePointer2, Move, Maximize, FileText, Check, Sparkles, X, AlertCircle, Building, DollarSign, TrendingUp, Clock, Users, Printer, HardHat, PenTool } from 'lucide-react';
+import { Upload, Square, Ruler, MousePointer2, Move, Maximize, FileText, Check, Sparkles, X, AlertCircle, Building, DollarSign, TrendingUp, Clock, Users, Printer, HardHat, PenTool, Database } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import { runFullCalculation } from '../services/calculationEngine';
 import { analyzeWithGemini } from '../services/geminiService';
-import { useData } from '../context/DataContext';
+import { Select } from '../components/UI';
 
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -29,11 +29,19 @@ export default function DigitalTakeoff() {
   const [aiResults, setAiResults] = useState(null);
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiError, setAiError] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   // كاش نتائج Gemini المكانية - مفتاحه بصمة الصورة لضمان نفس النتائج عند إعادة التحليل
   const spatialCacheRef = React.useRef({});
   // AI Configuration States with LocalStorage Persistence
   const [showConfigModal, setShowConfigModal] = useState(false);
-  const { categories, inventory, employees, equipment } = useData();
+
+  // SQLite Data States
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState('');
+  const [inventory, setInventory] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [equipment, setEquipment] = useState([]);
 
   const [buildingConfig, setBuildingConfig] = useState(() => {
     const saved = localStorage.getItem('takeoff_buildingConfig');
@@ -95,16 +103,44 @@ export default function DigitalTakeoff() {
   const handleToggleLabor = (id) => setSelectedLaborIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   const handleToggleEquip = (id) => setSelectedEquipIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   
-  // Fetch initial measurements from SQLite
+  // Fetch initial measurements and catalogs from SQLite
   useEffect(() => {
-    const fetchMeasurements = async () => {
+    const fetchAllData = async () => {
       if (window.electronAPI) {
-        const rows = await window.electronAPI.queryDb('SELECT * FROM takeoff_measurements ORDER BY id DESC');
-        setMeasurements(rows);
+        try {
+          const prjs = await window.electronAPI.queryDb('SELECT id, name FROM projects ORDER BY id DESC');
+          setProjects(prjs || []);
+          if (prjs && prjs.length > 0) setSelectedProject(prjs[0].id);
+
+          const cats = await window.electronAPI.queryDb('SELECT * FROM categories');
+          setCategories(cats || []);
+
+          const mats = await window.electronAPI.queryDb('SELECT * FROM materials_catalog');
+          setInventory(mats || []);
+
+          const staff = await window.electronAPI.queryDb('SELECT * FROM staff');
+          setEmployees(staff || []);
+
+          const equips = await window.electronAPI.queryDb('SELECT * FROM equipment');
+          setEquipment(equips || []);
+        } catch(e) {
+          console.error(e);
+        }
       }
     };
-    fetchMeasurements();
+    fetchAllData();
   }, []);
+
+  useEffect(() => {
+    if (!selectedProject || !window.electronAPI) return;
+    const fetchMeasurements = async () => {
+      try {
+        const rows = await window.electronAPI.queryDb('SELECT * FROM takeoff_measurements WHERE project_id = ? ORDER BY id DESC', [selectedProject]);
+        setMeasurements(rows || []);
+      } catch(e) { console.error(e); }
+    };
+    fetchMeasurements();
+  }, [selectedProject]);
   
   // Scale Calibration
   const [scaleFactor, setScaleFactor] = useState(100); // 100 px = 1 meter default
@@ -384,23 +420,24 @@ export default function DigitalTakeoff() {
 
   }, [currentTool, fabricCanvas, scaleFactor]);
 
-  const saveMeasurement = async (name, type, val, unit, aiCost = 0, aiDays = 0) => {
+  const saveMeasurement = async (name, type, val, unit, aiCost = 0, aiDays = 0, category = '', startDay = 0, endDay = 0) => {
     const rawVal = Number(val);
     const estCost = Number(aiCost) || 0;
     const estDays = Number(aiDays) || 0;
+    const sDay = Number(startDay) || 0;
+    const eDay = Number(endDay) || 0;
     
-    if (window.electronAPI) {
+    if (window.electronAPI && selectedProject) {
       await window.electronAPI.executeDb(
-        'INSERT INTO takeoff_measurements (blueprint_id, element_name, geometry_type, raw_value, unit, estimated_cost, estimated_days) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [1, name, type, rawVal, unit, estCost, estDays]
+        'INSERT INTO takeoff_measurements (project_id, element_name, geometry_type, raw_value, unit, estimated_cost, estimated_days, category, start_day, end_day) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [selectedProject, name, type, rawVal, unit, estCost, estDays, category, sDay, eDay]
       );
       // Refresh Data
-      const rows = await window.electronAPI.queryDb('SELECT * FROM takeoff_measurements ORDER BY id DESC');
-      setMeasurements(rows);
+      const rows = await window.electronAPI.queryDb('SELECT * FROM takeoff_measurements WHERE project_id = ? ORDER BY id DESC', [selectedProject]);
+      setMeasurements(rows || []);
     } else {
-      // Fallback for browser testing without Electron
       const newMeasurement = {
-        id: Date.now(), element_name: name, geometry_type: type, raw_value: rawVal, unit, estimated_cost: estCost, estimated_days: estDays
+        id: Date.now(), project_id: selectedProject, element_name: name, geometry_type: type, raw_value: rawVal, unit, estimated_cost: estCost, estimated_days: estDays, category, start_day: sDay, end_day: eDay
       };
       setMeasurements(prev => [newMeasurement, ...prev]);
     }
@@ -516,7 +553,9 @@ export default function DigitalTakeoff() {
           unit: 'يوم/عامل',
           estimated_cost: l.cost,
           category: 'عمالة',
-          estimated_days: l.days
+          estimated_days: l.days,
+          start_day: l.startDay,
+          end_day: l.endDay
         });
       });
     }
@@ -530,7 +569,25 @@ export default function DigitalTakeoff() {
           unit: 'يوم/معدة',
           estimated_cost: e.cost,
           category: 'معدات',
-          estimated_days: e.days
+          estimated_days: e.days,
+          start_day: e.startDay,
+          end_day: e.endDay
+        });
+      });
+    }
+
+    if (aiResults.tasksSchedule) {
+      aiResults.tasksSchedule.forEach(t => {
+        itemsToImport.push({
+          element_name: `مهمة: ${t.task_name}`,
+          geometry_type: 'مرحلة تنفيذية',
+          raw_value: t.days,
+          unit: 'يوم',
+          estimated_cost: 0,
+          category: 'مهام الذكاء الاصطناعي',
+          estimated_days: t.days,
+          start_day: t.startDay,
+          end_day: t.endDay
         });
       });
     }
@@ -544,9 +601,18 @@ export default function DigitalTakeoff() {
     setShowAiModal(false);
     setAiResults(null);
 
+    if (window.electronAPI) {
+      try { await window.electronAPI.executeDb('ALTER TABLE takeoff_measurements ADD COLUMN start_day INTEGER DEFAULT 0'); } catch(e) {}
+      try { await window.electronAPI.executeDb('ALTER TABLE takeoff_measurements ADD COLUMN end_day INTEGER DEFAULT 0'); } catch(e) {}
+    }
+
     // استيراد البنود في الخلفية
     for (const m of itemsToImport) {
-      await saveMeasurement(m.element_name, m.geometry_type, m.raw_value, m.unit, m.estimated_cost, m.estimated_days);
+      try {
+        await saveMeasurement(m.element_name, m.geometry_type, m.raw_value, m.unit, m.estimated_cost, m.estimated_days, m.category, m.start_day, m.end_day);
+      } catch (err) {
+        console.error("Failed to save measurement", m, err);
+      }
     }
   };
 
@@ -766,6 +832,53 @@ export default function DigitalTakeoff() {
     html2pdf().set(opt).from(htmlContent).save();
   };
 
+  const handleSyncToMainSystem = async () => {
+    if (!window.electronAPI || !selectedProject || measurements.length === 0) return;
+    setIsSyncing(true);
+    
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + (Number(projectDuration) || 45));
+      const endStr = endDate.toISOString().split('T')[0];
+
+      // 1. ترحيل إلى جداول الكميات (boq_items)
+      for (const m of measurements) {
+        const unitCost = m.raw_value > 0 ? (Number(m.estimated_cost) / Number(m.raw_value)) : 0;
+        await window.electronAPI.executeDb(
+          `INSERT INTO boq_items (project_id, description, unit, qty, est_rate, act_rate, is_header) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [selectedProject, m.element_name, m.unit, m.raw_value, unitCost, 0, 0]
+        );
+
+        // 2. ترحيل إلى المهام (tasks) إذا كان البند يخص العمالة أو المعدات أو المهام الذكية
+        if (m.element_name.startsWith('عمالة:') || m.element_name.startsWith('معدة:') || m.element_name.startsWith('مهمة:')) {
+          let taskTitle = m.element_name.replace('عمالة: ', '').replace('معدة: ', '').replace('مهمة: ', '');
+          if (!m.element_name.startsWith('مهمة:')) taskTitle = `تنفيذ: ${taskTitle}`;
+          
+          const taskStart = new Date();
+          taskStart.setDate(taskStart.getDate() + (Number(m.start_day) || 0));
+          const taskStartStr = taskStart.toISOString().split('T')[0];
+
+          const taskEnd = new Date();
+          taskEnd.setDate(taskEnd.getDate() + (Number(m.end_day) || Number(m.estimated_days) || 1));
+          const taskEndStr = taskEnd.toISOString().split('T')[0];
+
+          await window.electronAPI.executeDb(
+            `INSERT INTO tasks (title, project_id, assigned_to, start_date, end_date, priority, status, progress) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [taskTitle, selectedProject, null, taskStartStr, taskEndStr, 'عالية', 'لم تبدأ', 0]
+          );
+        }
+      }
+
+      alert('تم اعتماد وترحيل جميع بنود المقايسة إلى جداول الكميات (BOQ) وإنشاء مهام التنفيذ بنجاح!');
+    } catch (e) {
+      console.error(e);
+      alert('حدث خطأ أثناء الترحيل.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // --- Calculations for Summary Cards ---
   const materialsCost = measurements.filter(m => !m.element_name.startsWith('عمالة:') && !m.element_name.startsWith('معدة:')).reduce((sum, m) => sum + (Number(m.estimated_cost) || 0), 0);
   const laborCost = measurements.filter(m => m.element_name.startsWith('عمالة:')).reduce((sum, m) => sum + (Number(m.estimated_cost) || 0), 0);
@@ -781,6 +894,18 @@ export default function DigitalTakeoff() {
 
   return (
     <div className="space-y-6 h-[calc(100vh-6rem)] flex flex-col relative print-friendly-container">
+      
+      {/* Project Selector Bar */}
+      <div className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 shrink-0">
+        <Building className="w-6 h-6 text-primary-600" />
+        <h2 className="text-lg font-black text-gray-800">المشروع الحالي لحصر الكميات:</h2>
+        <Select 
+          options={projects.map(p => ({label: p.name, value: p.id}))}
+          value={selectedProject}
+          onChange={e => setSelectedProject(Number(e.target.value))}
+          className="w-64 border-gray-200"
+        />
+      </div>
 
       {/* ===== AI Configuration Modal ===== */}
       {showConfigModal && (
@@ -830,7 +955,7 @@ export default function DigitalTakeoff() {
               
               {/* === Inventory Categories === */}
               {categories.map(cat => {
-                const items = inventory.filter(i => i.categoryId === cat.id);
+                const items = inventory.filter(i => i.category_id === cat.id);
                 if (items.length === 0) return null;
                 return (
                   <div key={cat.id} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
@@ -1233,6 +1358,14 @@ export default function DigitalTakeoff() {
             </h3>
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold bg-primary-100 text-primary-700 px-3 py-1.5 rounded-full">{measurements.length} بند ومادة</span>
+              <button 
+                onClick={handleSyncToMainSystem}
+                disabled={isSyncing || measurements.length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:opacity-90 transition-opacity shadow-md no-print disabled:opacity-50"
+              >
+                <Database className="w-4 h-4" />
+                <span>{isSyncing ? 'جاري الترحيل...' : 'اعتماد وترحيل للنظام'}</span>
+              </button>
               <button 
                 onClick={handleExportPDF}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-md no-print"

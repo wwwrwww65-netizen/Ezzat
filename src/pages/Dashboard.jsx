@@ -38,7 +38,11 @@ const chartData = [
 const COLORS = ['#1e3a8a', '#10b981', '#ef4444', '#f59e0b'];
 
 export default function Dashboard() {
-  const { projects, clients, invoices, expenses, income, tasks, notifications, theme } = useData();
+  const [data, setData] = React.useState({
+    projects: [], clients: [], invoices: [], expenses: [], income: [], tasks: [], notifications: []
+  });
+
+  const { theme } = useData(); // Only keep theme from context
   const isDark = theme === 'dark';
   const chartGridColor = isDark ? '#30363d' : '#f1f5f9';
   const chartTextColor = isDark ? '#8b949e' : '#64748b';
@@ -46,17 +50,35 @@ export default function Dashboard() {
     ? { borderRadius: '16px', border: '1px solid #30363d', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)', padding: '12px', backgroundColor: '#161b22', color: '#e6edf3' }
     : { borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' };
 
-  const totalIncome = (invoices?.filter(i => i.status === 'مدفوعة').reduce((acc, i) => acc + Number(i.total || 0), 0) || 0) +
-                    (income?.filter(i => i.status === 'مؤكد').reduce((acc, i) => acc + Number(i.amount || 0), 0) || 0);
+  React.useEffect(() => {
+    const fetchData = async () => {
+      if (window.electronAPI) {
+        const [projects, clients, invoices, expenses, income, tasks, notifications] = await Promise.all([
+          window.electronAPI.queryDb("SELECT * FROM projects"),
+          window.electronAPI.queryDb("SELECT * FROM clients"),
+          window.electronAPI.queryDb("SELECT * FROM invoices"),
+          window.electronAPI.queryDb("SELECT * FROM expenses"),
+          window.electronAPI.queryDb("SELECT * FROM income"),
+          window.electronAPI.queryDb("SELECT * FROM tasks"),
+          window.electronAPI.queryDb("SELECT * FROM notifications ORDER BY id DESC")
+        ]);
+        setData({ projects, clients, invoices, expenses, income, tasks, notifications });
+      }
+    };
+    fetchData();
+  }, []);
 
-  const totalExpenses = (expenses?.reduce((acc, e) => acc + Number(e.amount || 0), 0) || 0);
+  const totalIncome = (data.invoices?.filter(i => i.status === 'مدفوعة').reduce((acc, i) => acc + Number(i.total || 0), 0) || 0) +
+                    (data.income?.filter(i => i.status === 'مؤكد').reduce((acc, i) => acc + Number(i.amount || 0), 0) || 0);
+
+  const totalExpenses = (data.expenses?.reduce((acc, e) => acc + Number(e.amount || 0), 0) || 0);
 
   const measurements = useLiveQuery(() => db.takeoff_measurements.toArray(), []);
   const takeoffTotal = measurements?.reduce((acc, m) => acc + (m.estimated_cost || 0), 0) || 0;
 
   const stats = [
-    { label: 'إجمالي المشاريع', value: projects.length, trend: '+2', trendType: 'up', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'المشاريع النشطة', value: projects.filter(p => p.status === 'نشط').length, trend: '0', trendType: 'neutral', icon: ActivityIcon, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'إجمالي المشاريع', value: data.projects.length, trend: '+2', trendType: 'up', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'المشاريع النشطة', value: data.projects.filter(p => p.status === 'نشط').length, trend: '0', trendType: 'neutral', icon: ActivityIcon, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'صافي الربح', value: `${(totalIncome - totalExpenses).toLocaleString()} ر.س`, trend: '+15%', trendType: 'up', icon: Wallet, color: 'text-primary-600', bg: 'bg-primary-50' },
     { label: 'تكلفة الحصر الرقمي', value: `${takeoffTotal.toLocaleString()} ر.س`, trend: `${measurements?.length || 0} قياسات`, trendType: 'neutral', icon: Calculator, color: 'text-indigo-600', bg: 'bg-indigo-50' },
   ];
@@ -129,7 +151,7 @@ export default function Dashboard() {
 
         <Card title="أحدث التنبيهات" subtitle="إشعارات النظام والتحذيرات">
            <div className="space-y-4 mt-4">
-              {notifications.slice(0, 4).map(note => (
+              {data.notifications.slice(0, 4).map(note => (
                 <div key={note.id} className={cn(
                   "p-4 rounded-2xl border flex gap-4 transition-all hover:shadow-md",
                   note.type === 'warning' ? 'bg-amber-50 border-amber-100' : 'bg-blue-50 border-blue-100'
@@ -160,21 +182,21 @@ export default function Dashboard() {
           footer={<Link to="/projects" className="text-sm font-bold text-primary-600 flex items-center justify-center gap-2 hover:gap-3 transition-all">عرض كافة المشاريع <ChevronRight className="w-4 h-4" /></Link>}
         >
           <Table headers={['المشروع', 'التقدم', 'الميزانية', 'الحالة']}>
-            {projects.slice(0, 5).map(prj => (
+            {data.projects.slice(0, 5).map(prj => (
               <tr key={prj.id}>
                 <td className="px-6 py-4">
                    <p className="text-sm font-bold text-gray-800">{prj.name}</p>
-                   <p className="text-[10px] text-gray-400 font-medium">{prj.clientName}</p>
+                   <p className="text-[10px] text-gray-400 font-medium">{prj.clientName || 'بدون عميل'}</p>
                 </td>
                 <td className="px-6 py-4">
                    <div className="flex items-center gap-2">
                       <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                         <div className="h-full bg-primary-600" style={{ width: `${prj.progress}%` }}></div>
+                         <div className="h-full bg-primary-600" style={{ width: `${prj.progress || 0}%` }}></div>
                       </div>
-                      <span className="text-[10px] font-bold text-gray-600">{prj.progress}%</span>
+                      <span className="text-[10px] font-bold text-gray-600">{prj.progress || 0}%</span>
                    </div>
                 </td>
-                <td className="px-6 py-4 font-bold text-sm text-gray-700">{prj.budget?.toLocaleString()} <span className="text-[10px] font-normal">ر.س</span></td>
+                <td className="px-6 py-4 font-bold text-sm text-gray-700">{prj.budget?.toLocaleString() || 0} <span className="text-[10px] font-normal">ر.س</span></td>
                 <td className="px-6 py-4"><Badge variant="success">{prj.status}</Badge></td>
               </tr>
             ))}
@@ -185,7 +207,7 @@ export default function Dashboard() {
           footer={<Link to="/tasks" className="text-sm font-bold text-primary-600 flex items-center justify-center gap-2 hover:gap-3 transition-all">إدارة كافة المهام <ChevronRight className="w-4 h-4" /></Link>}
         >
            <div className="divide-y divide-gray-50">
-              {tasks.slice(0, 5).map(task => (
+              {data.tasks.slice(0, 5).map(task => (
                 <div key={task.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                    <div className="flex items-center gap-4">
                       <div className={cn(
@@ -194,7 +216,7 @@ export default function Dashboard() {
                       )}></div>
                       <div>
                          <p className="text-sm font-bold text-gray-800">{task.title}</p>
-                         <p className="text-xs text-gray-400 mt-0.5">موعد التسليم: {task.dueDate}</p>
+                         <p className="text-xs text-gray-400 mt-0.5">موعد التسليم: {task.due_date}</p>
                       </div>
                    </div>
                    <Badge variant="neutral">{task.status}</Badge>

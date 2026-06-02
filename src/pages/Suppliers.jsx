@@ -70,8 +70,8 @@ export default function Suppliers() {
     if (!newSupplier.name) return;
     if (window.electronAPI) {
       await window.electronAPI.executeDb(
-        'INSERT INTO suppliers (name, phone, balance) VALUES (?, ?, ?)',
-        [newSupplier.name, newSupplier.phone, newSupplier.initialBalance || 0]
+        'INSERT INTO suppliers (name, category, phone, balance) VALUES (?, ?, ?, ?)',
+        [newSupplier.name, newSupplier.category, newSupplier.phone, newSupplier.initialBalance || 0]
       );
       setNewSupplier({ name: '', category: '', phone: '', initialBalance: 0 });
       setIsAddModalOpen(false);

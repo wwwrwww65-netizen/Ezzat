@@ -5,7 +5,7 @@ import {
   Info, MessageCircle, HardDrive, Medal, AlertTriangle, 
   Headset, Store, Receipt, Upload, Save, RotateCcw, 
   AppWindow, RefreshCw, Unplug, Wifi, 
-  FolderOpen, Download, Trash2, Eraser
+  FolderOpen, Download, Trash2, Eraser, Bot, Eye, EyeOff, Edit2, CheckCircle2
 } from 'lucide-react';
 
 export default function Settings() {
@@ -33,10 +33,14 @@ export default function Settings() {
     localBackupPath: '',
     localAutoBackup: false,
     localInterval: '360',
-    perfMode: 'auto'
+    perfMode: 'auto',
+    geminiApiKey: ''
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isEditingApiKey, setIsEditingApiKey] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -64,7 +68,12 @@ export default function Settings() {
         );
       }
     }
-    setTimeout(() => setIsSaving(false), 800);
+    setTimeout(() => {
+      setIsSaving(false);
+      setSaveMessage('تم حفظ الإعدادات بنجاح!');
+      setIsEditingApiKey(false);
+      setTimeout(() => setSaveMessage(''), 3000);
+    }, 800);
   };
 
   const handleChange = (e) => {
@@ -90,6 +99,7 @@ export default function Settings() {
     { id: 'info', icon: Info, label: 'المعلومات والبيانات' },
     { id: 'whatsapp', icon: MessageCircle, label: 'الربط مع واتساب' },
     { id: 'backup', icon: HardDrive, label: 'التخزين والنسخ' },
+    { id: 'ai', icon: Bot, label: 'الذكاء الاصطناعي' },
     { id: 'advanced', icon: AlertTriangle, label: 'خيارات متقدمة' },
     { id: 'support', icon: Headset, label: 'الدعم الفني والخدمات' },
   ];
@@ -112,7 +122,12 @@ export default function Settings() {
               );
             })()}
           </h3>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
+            {saveMessage && (
+              <span className="text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1.5 animate-in fade-in zoom-in duration-300">
+                <CheckCircle2 className="w-4 h-4" /> {saveMessage}
+              </span>
+            )}
             <Button variant="outline" className="border-gray-200 text-gray-600 font-bold px-4 hover:bg-gray-50">
               <RotateCcw className="w-4 h-4 ml-2" /> استعادة الافتراضية
             </Button>
@@ -416,6 +431,57 @@ export default function Settings() {
                         </select>
                     </div>
                   </div>
+               </div>
+             </div>
+          )}
+
+          {/* الذكاء الاصطناعي */}
+          {activeTab === 'ai' && (
+             <div className="grid grid-cols-1 gap-8">
+               <div className="bg-gray-50 border border-gray-100 p-6 rounded-2xl max-w-4xl">
+                 <div className="flex items-center gap-3 mb-6 border-b border-gray-200 pb-4">
+                   <div className="w-8 h-8 rounded bg-purple-100 flex items-center justify-center">
+                     <Bot className="w-5 h-5 text-purple-600" />
+                   </div>
+                   <h4 className="text-lg font-bold text-gray-800">إعدادات الذكاء الاصطناعي (Gemini)</h4>
+                 </div>
+                 <div className="mb-6">
+                   <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-2 gap-2">
+                     <div>
+                       <label className="block text-sm font-bold text-gray-700">مفتاح API الخاص بـ Gemini</label>
+                       <p className="text-xs text-gray-500 mt-1">يمكنك الحصول على المفتاح من منصة Google AI Studio. اتركه فارغاً لاستخدام المفتاح الافتراضي.</p>
+                     </div>
+                     {!isEditingApiKey && (
+                       <Button type="button" onClick={() => setIsEditingApiKey(true)} variant="outline" size="sm" className="whitespace-nowrap flex items-center gap-2 border-primary-200 text-primary-700 hover:bg-primary-50 px-3">
+                         <Edit2 className="w-4 h-4" /> تعديل المفتاح
+                       </Button>
+                     )}
+                   </div>
+                   <div className="relative mt-3">
+                     <Input 
+                       name="geminiApiKey" 
+                       type={showApiKey ? "text" : "password"} 
+                       value={settings.geminiApiKey || ''} 
+                       onChange={handleChange} 
+                       disabled={!isEditingApiKey}
+                       dir="ltr" 
+                       placeholder="AIzaSy..........................." 
+                       className={`bg-white py-3 pr-12 text-left font-mono ${!isEditingApiKey ? 'bg-gray-50 text-gray-500 cursor-not-allowed opacity-70' : 'border-primary-400 ring-2 ring-primary-100'}`} 
+                     />
+                     <button 
+                       type="button" 
+                       onClick={() => setShowApiKey(!showApiKey)}
+                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors p-1 bg-transparent border-none"
+                     >
+                       {showApiKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                     </button>
+                   </div>
+                   {isEditingApiKey && (
+                     <p className="text-[11px] text-amber-600 font-bold mt-2 flex items-center gap-1">
+                       <AlertTriangle className="w-3 h-3" /> الحقل مفتوح للتعديل. لا تنس النقر على (حفظ وتطبيق الإعدادات) بعد التغيير.
+                     </p>
+                   )}
+                 </div>
                </div>
              </div>
           )}

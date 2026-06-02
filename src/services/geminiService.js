@@ -4,7 +4,7 @@
  * مهمة الحساب: يقوم بها calculationEngine.js بدقة 100% من قاعدة البيانات.
  */
 
-const GEMINI_API_KEY = 'AIzaSyBaLTNys_YZK-XEd42b78_8QY1r_kX_Zpg';
+const GEMINI_API_KEY = ''; // Removed hardcoded key. Read from Settings DB.
 
 // قائمة النماذج البديلة - يجرب النظام الأول فإذا كان مزدحماً انتقل للتالي
 const GEMINI_MODELS = [
@@ -12,8 +12,6 @@ const GEMINI_MODELS = [
   'gemini-2.0-flash',       // بديل جيد
   'gemini-2.0-flash-lite',  // أخف وأقل عرضة لـ rate limit
 ];
-const getApiUrl = (model) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
 /**
  * المرحلة الأولى: استخراج البيانات المكانية من صورة المخطط فقط.
@@ -21,6 +19,24 @@ const getApiUrl = (model) =>
  */
 export const analyzeWithGemini = async (imageDataUrls, config, onProgress) => {
   try {
+    if (onProgress) onProgress(5, 'جاري تحضير المخططات وجلب الإعدادات...');
+
+    let currentApiKey = GEMINI_API_KEY;
+    if (window.electronAPI) {
+      try {
+        const rows = await window.electronAPI.queryDb("SELECT value FROM settings WHERE key='geminiApiKey'");
+        if (rows && rows.length > 0 && rows[0].value) {
+          currentApiKey = rows[0].value;
+        }
+      } catch (e) {
+        console.error('Failed to load API key from DB:', e);
+      }
+    }
+
+    if (!currentApiKey) {
+      throw new Error('مفتاح API غير متوفر. الرجاء إضافته من صفحة الإعدادات.');
+    }
+
     if (onProgress) onProgress(10, 'جاري تحضير المخططات...');
 
     // عدد الأدوار من الإعدادات
@@ -31,14 +47,15 @@ export const analyzeWithGemini = async (imageDataUrls, config, onProgress) => {
     const hasBasement = buildingInfo.some(l => l.includes('يوجد بدروم'));
     const hasRoof = buildingInfo.some(l => l.includes('يوجد ملحق علوي'));
 
-    const SPATIAL_EXTRACTION_PROMPT = `أنت خبير في قراءة المخططات الهندسية. مهمتك الوحيدة هي استخراج البيانات المكانية (المساحات والأبعاد) من المخطط المرفق.
+const SPATIAL_EXTRACTION_PROMPT = `أنت خبير في قراءة المخططات الهندسية ومدير مشاريع محترف. مهمتك هي استخراج البيانات المكانية من المخطط واقتراح جدول تنفيذي متسلسل للمشروع.
 
-لا تقم بأي حسابات مالية أو تكاليف أو كميات مواد. فقط اقرأ المخطط واستخرج:
+لا تقم بأي حسابات مالية. اقرأ المخطط واستخرج:
 1. مجموع مساحة الدور الواحد (من مجموع مساحات الغرف أو الأبعاد الكلية).
 2. قائمة الغرف مع اسم كل غرفة ومساحتها المقروءة من المخطط مباشرة.
-3. المحيط التقريبي للمبنى (بالمتر) إن أمكن.
-4. ارتفاع الدور الواحد (القياسي 3 متر إن لم يُذكر في المخطط).
-5. عدد الحمامات، الغرف، المداخل (للتخمين لاحقاً بعدد الأبواب والنوافذ).
+3. المحيط التقريبي للمبنى (بالمتر).
+4. ارتفاع الدور الواحد (القياسي 3 متر إن لم يُذكر).
+5. عدد الحمامات، الغرف، المداخل.
+6. جدولاً زمنياً متسلسلاً للمشروع (Construction Schedule Phases) يوضح متى تبدأ وتنتهي كل مرحلة حقيقية بناءً على حجم وتفاصيل هذا المخطط تحديداً، مع إعطاء نسب البداية والنهاية لكل مهمة (من 0.0 إلى 1.0).
 
 معلومات إضافية من المستخدم:
 - عدد الأدوار المطلوبة: ${numFloors}
@@ -57,6 +74,9 @@ export const analyzeWithGemini = async (imageDataUrls, config, onProgress) => {
   "windowCount": عدد النوافذ التقريبي (رقم),
   "rooms": [
     { "name": "اسم الغرفة", "area": المساحة_بالمتر_المربع, "category": "نوم/معيشة/حمام/مطبخ/ممر/أخرى", "confidence": "high/medium" }
+  ],
+  "proposed_schedule": [
+    { "phase_name": "اسم المرحلة أو المهمة (مثل: تخطيط وحفر، أعمال العظم، سباكة، تشطيبات)", "start_ratio": 0.0, "end_ratio": 0.15 }
   ],
   "readingConfidence": "high/medium/low",
   "notes": "أي ملاحظات على جودة المخطط أو صعوبات القراءة"
@@ -105,9 +125,10 @@ export const analyzeWithGemini = async (imageDataUrls, config, onProgress) => {
     // حلقة تجرب النماذج بالترتيب عند الازدحام
     while (currentModelIndex < GEMINI_MODELS.length) {
       const model = GEMINI_MODELS[currentModelIndex];
+      const modelApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${currentApiKey}`;
       try {
         if (onProgress) onProgress(currentProgress, `جاري المحاولة بنموذج ${model}...`);
-        response = await fetch(getApiUrl(model), {
+        response = await fetch(modelApiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)

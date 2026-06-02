@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { confirmDialog } from '../utils/confirmDialog';
 import { Card, Badge, Table, Button, Input, Modal, Select } from '../components/UI';
-import { useData } from '../context/DataContext';
 import {
   Users,
   Plus,
   Search,
-  Filter,
   MoreVertical,
   Phone,
   Mail,
@@ -21,43 +20,103 @@ import {
 } from 'lucide-react';
 
 export default function Clients() {
-  const { clients, projects, invoices, payments, addItem, updateItem, deleteItem } = useData();
+  const [clients, setClients] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
   const [selectedClient, setSelectedClient] = useState(null);
+  
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
+
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    mobile: '',
-    email: '',
-    address: '',
-    city: 'الرياض',
-    country: 'السعودية',
-    type: 'فرد',
-    idNumber: '',
-    workPlace: '',
-    notes: '',
-    status: 'نشط',
-    creditLimit: 0,
-    currentBalance: 0
+    name: '', phone: '', mobile: '', email: '', address: '',
+    city: 'الرياض', country: 'السعودية', type: 'فرد', idNumber: '',
+    workPlace: '', notes: '', status: 'نشط', creditLimit: 0, currentBalance: 0
   });
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    if (!window.electronAPI) return;
+    try {
+      const cls = await window.electronAPI.queryDb('SELECT * FROM clients ORDER BY id DESC');
+      setClients(cls || []);
+
+      // If projects table exists, fetch
+      try {
+        const prjs = await window.electronAPI.queryDb('SELECT id, client_id FROM projects');
+        setProjects(prjs || []);
+      } catch(e) {}
+
+      // If invoices table exists, fetch
+      try {
+        const invs = await window.electronAPI.queryDb('SELECT id, client_id FROM invoices');
+        setInvoices(invs || []);
+      } catch(e) {}
+
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (client.name || '').toLowerCase().includes(searchTerm.toLowerCase()) &&
     (filterType === '' || client.type === filterType)
   );
 
-  const handleAddClient = (e) => {
+  const handleSaveClient = async (e) => {
     e.preventDefault();
-    addItem('clients', { ...formData, id: Date.now() });
+    if (!window.electronAPI) return;
+
+    if (editingClient) {
+      await window.electronAPI.executeDb(
+        `UPDATE clients SET name=?, phone=?, mobile=?, email=?, address=?, city=?, country=?, type=?, idNumber=?, workPlace=?, notes=?, status=?, creditLimit=?, currentBalance=? WHERE id=?`,
+        [formData.name, formData.phone, formData.mobile, formData.email, formData.address, formData.city, formData.country, formData.type, formData.idNumber, formData.workPlace, formData.notes, formData.status, formData.creditLimit, formData.currentBalance, editingClient.id]
+      );
+    } else {
+      await window.electronAPI.executeDb(
+        `INSERT INTO clients (name, phone, mobile, email, address, city, country, type, idNumber, workPlace, notes, status, creditLimit, currentBalance) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [formData.name, formData.phone, formData.mobile, formData.email, formData.address, formData.city, formData.country, formData.type, formData.idNumber, formData.workPlace, formData.notes, formData.status, formData.creditLimit, formData.currentBalance]
+      );
+    }
+
     setShowAddModal(false);
+    fetchData();
+  };
+
+  const openAdd = () => {
+    setEditingClient(null);
     setFormData({
-      name: '', phone: '', mobile: '', email: '', address: '', city: 'الرياض',
-      country: 'السعودية', type: 'فرد', idNumber: '', workPlace: '', notes: '',
-      status: 'نشط', creditLimit: 0, currentBalance: 0
+      name: '', phone: '', mobile: '', email: '', address: '',
+      city: 'الرياض', country: 'السعودية', type: 'فرد', idNumber: '',
+      workPlace: '', notes: '', status: 'نشط', creditLimit: 0, currentBalance: 0
     });
+    setShowAddModal(true);
+  };
+
+  const openEdit = (client) => {
+    setEditingClient(client);
+    setFormData({
+      name: client.name || '', phone: client.phone || '', mobile: client.mobile || '',
+      email: client.email || '', address: client.address || '', city: client.city || 'الرياض',
+      country: client.country || 'السعودية', type: client.type || 'فرد', idNumber: client.idNumber || '',
+      workPlace: client.workPlace || '', notes: client.notes || '', status: client.status || 'نشط',
+      creditLimit: client.creditLimit || 0, currentBalance: client.currentBalance || 0
+    });
+    setShowAddModal(true);
+  };
+
+  const deleteClient = async (id) => {
+    if (await confirmDialog('هل أنت متأكد من حذف هذا العميل؟')) {
+      await window.electronAPI.executeDb('DELETE FROM clients WHERE id=?', [id]);
+      fetchData();
+    }
   };
 
   const openDetails = (client) => {
@@ -65,36 +124,34 @@ export default function Clients() {
     setShowDetailsModal(true);
   };
 
-  const getClientProjects = (clientId) => projects.filter(p => p.clientId === clientId);
-  const getClientInvoices = (clientId) => invoices.filter(i => i.clientId === clientId);
-  const getClientPayments = (clientId) => payments.filter(p => p.entityType === 'client' && p.entityId === clientId);
+  const getClientProjects = (clientId) => projects.filter(p => p.client_id === clientId);
+  const getClientInvoices = (clientId) => invoices.filter(i => i.client_id === clientId);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-300 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">إدارة العملاء</h1>
+          <h1 className="text-2xl font-black text-gray-800 flex items-center gap-3">
+            <Users className="w-8 h-8 text-primary-600" />
+            إدارة العملاء
+          </h1>
           <p className="text-sm text-gray-500 mt-1">إدارة بيانات العملاء، المشاريع المرتبطة، والوضع المالي</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => setShowAddModal(true)} variant="primary">
-            <Plus className="w-4 h-4" />
-            <span>إضافة عميل جديد</span>
-          </Button>
-          <Button variant="secondary">
-            <Download className="w-4 h-4" />
-            <span>تصدير</span>
+          <Button onClick={openAdd} className="bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-lg shadow-primary-200 border-none">
+            <Plus className="w-4 h-4 ml-2" />
+            إضافة عميل جديد
           </Button>
         </div>
       </div>
 
-      <Card>
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <Card className="p-0 border-none shadow-sm bg-white overflow-hidden">
+        <div className="p-5 border-b border-gray-100 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <Input
-              placeholder="البحث بالاسم، الهاتف، أو البريد الإلكتروني..."
-              className="pr-10"
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              placeholder="البحث بالاسم..."
+              className="w-full pr-9 pl-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -113,48 +170,50 @@ export default function Clients() {
         </div>
 
         <Table headers={['العميل', 'التواصل', 'النوع', 'المشاريع', 'الرصيد', 'الحالة', 'إجراءات']}>
-          {filteredClients.map((client) => (
-            <tr key={client.id} className="hover:bg-gray-50 transition-colors">
+          {filteredClients.length === 0 ? (
+             <tr><td colSpan="7" className="text-center py-10 text-gray-400 font-bold">لا يوجد عملاء مضافين</td></tr>
+          ) : filteredClients.map((client) => (
+            <tr key={client.id} className="hover:bg-gray-50/50 transition-colors">
               <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold">
+                  <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-primary-600 font-black shrink-0">
                     {client.name.charAt(0)}
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-gray-900">{client.name}</div>
-                    <div className="text-xs text-gray-500">{client.idNumber}</div>
+                    <div className="text-sm font-bold text-gray-800">{client.name}</div>
+                    <div className="text-xs text-gray-400">{client.idNumber || 'بدون هوية/سجل'}</div>
                   </div>
                 </div>
               </td>
               <td className="px-6 py-4">
                 <div className="text-sm text-gray-600 space-y-1">
-                  <div className="flex items-center gap-1"><Phone className="w-3 h-3" /> {client.phone}</div>
-                  <div className="flex items-center gap-1 text-xs text-gray-400"><Mail className="w-3 h-3" /> {client.email}</div>
+                  <div className="flex items-center gap-1 font-mono"><Phone className="w-3 h-3 text-gray-400" /> {client.phone || client.mobile || '—'}</div>
+                  <div className="flex items-center gap-1 text-xs text-gray-400"><Mail className="w-3 h-3 text-gray-400" /> {client.email || '—'}</div>
                 </div>
               </td>
               <td className="px-6 py-4">
                 <Badge variant={client.type === 'شركة' ? 'info' : 'neutral'}>{client.type}</Badge>
               </td>
               <td className="px-6 py-4 text-center">
-                <Badge variant="neutral">{getClientProjects(client.id).length}</Badge>
+                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-bold">{getClientProjects(client.id).length}</span>
               </td>
               <td className="px-6 py-4 font-bold text-sm">
-                <span className={client.currentBalance > 0 ? 'text-red-600' : 'text-emerald-600'}>
-                  {Number(client.currentBalance).toLocaleString()} ر.س
+                <span className={client.currentBalance > 0 ? 'text-red-500' : 'text-emerald-500'}>
+                  {Number(client.currentBalance || 0).toLocaleString()} <span className="text-[10px]">ر.س</span>
                 </span>
               </td>
               <td className="px-6 py-4">
                 <Badge variant={client.status === 'نشط' ? 'success' : 'danger'}>{client.status}</Badge>
               </td>
               <td className="px-6 py-4">
-                <div className="flex items-center gap-2">
-                  <button onClick={() => openDetails(client)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="التفاصيل">
+                <div className="flex items-center gap-1">
+                  <button onClick={() => openDetails(client)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="التفاصيل">
                     <Eye className="w-4 h-4" />
                   </button>
-                  <button className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors" title="تعديل">
+                  <button onClick={() => openEdit(client)} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors" title="تعديل">
                     <Edit className="w-4 h-4" />
                   </button>
-                  <button onClick={() => deleteItem('clients', client.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="حذف">
+                  <button onClick={() => deleteClient(client.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="حذف">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -164,42 +223,67 @@ export default function Clients() {
         </Table>
       </Card>
 
-      {/* Add Client Modal */}
+      {/* Add/Edit Client Modal */}
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="إضافة عميل جديد"
+        title={editingClient ? "تعديل بيانات العميل" : "إضافة عميل جديد"}
+        className="max-w-2xl"
       >
-        <form noValidate className="space-y-4" onSubmit={handleAddClient}>
+        <form className="space-y-4" onSubmit={handleSaveClient}>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="اسم العميل" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-            <Select
-              label="نوع العميل"
-              options={[{label: 'فرد', value: 'فرد'}, {label: 'شركة', value: 'شركة'}]}
-              value={formData.type}
-              onChange={(e) => setFormData({...formData, type: e.target.value})}
-            />
+            <div>
+               <label className="block text-sm font-bold text-gray-700 mb-2">اسم العميل <span className="text-red-500">*</span></label>
+               <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+            </div>
+            <div>
+               <label className="block text-sm font-bold text-gray-700 mb-2">نوع العميل</label>
+               <Select
+                 options={[{label: 'فرد', value: 'فرد'}, {label: 'شركة', value: 'شركة'}]}
+                 value={formData.type}
+                 onChange={(e) => setFormData({...formData, type: e.target.value})}
+               />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="رقم الجوال" value={formData.mobile} onChange={(e) => setFormData({...formData, mobile: e.target.value})} />
-            <Input label="البريد الإلكتروني" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+            <div>
+               <label className="block text-sm font-bold text-gray-700 mb-2">رقم الجوال</label>
+               <Input value={formData.mobile} onChange={(e) => setFormData({...formData, mobile: e.target.value})} />
+            </div>
+            <div>
+               <label className="block text-sm font-bold text-gray-700 mb-2">البريد الإلكتروني</label>
+               <Input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="رقم الهوية / السجل" value={formData.idNumber} onChange={(e) => setFormData({...formData, idNumber: e.target.value})} />
-            <Input label="الحد الائتماني" type="number" value={formData.creditLimit} onChange={(e) => setFormData({...formData, creditLimit: e.target.value})} />
+            <div>
+               <label className="block text-sm font-bold text-gray-700 mb-2">رقم الهوية / السجل التجاري</label>
+               <Input value={formData.idNumber} onChange={(e) => setFormData({...formData, idNumber: e.target.value})} />
+            </div>
+            <div>
+               <label className="block text-sm font-bold text-gray-700 mb-2">جهة العمل</label>
+               <Input value={formData.workPlace} onChange={(e) => setFormData({...formData, workPlace: e.target.value})} />
+            </div>
           </div>
-          <Input label="العنوان الكامل" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
-          <textarea
-            className="w-full p-2 border border-gray-300 rounded-lg text-sm"
-            placeholder="ملاحظات إضافية..."
-            rows="3"
-            value={formData.notes}
-            onChange={(e) => setFormData({...formData, notes: e.target.value})}
-          ></textarea>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">العنوان</label>
+            <Input value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">ملاحظات إضافية</label>
+            <textarea
+              className="w-full p-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none"
+              rows="3"
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+            ></textarea>
+          </div>
           
-          <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
-            <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>إلغاء</Button>
-            <Button variant="primary" type="submit">حفظ البيانات</Button>
+          <div className="flex gap-2 pt-4 border-t border-gray-100">
+            <Button variant="ghost" type="button" onClick={() => setShowAddModal(false)} className="flex-1 text-gray-600 font-bold">إلغاء</Button>
+            <Button type="submit" className="flex-[2] bg-primary-600 hover:bg-primary-700 text-white font-bold border-none shadow-md">
+              حفظ بيانات العميل
+            </Button>
           </div>
         </form>
       </Modal>
@@ -209,49 +293,46 @@ export default function Clients() {
         <Modal
           isOpen={showDetailsModal}
           onClose={() => setShowDetailsModal(false)}
-          title={`تفاصيل العميل: ${selectedClient.name}`}
+          title={`ملف العميل: ${selectedClient.name}`}
           className="max-w-4xl"
         >
           <div className="space-y-6">
             <div className="grid grid-cols-3 gap-4">
-              <Card className="text-center p-4">
-                <Briefcase className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-                <p className="text-xs text-gray-500">المشاريع</p>
-                <p className="text-xl font-bold">{getClientProjects(selectedClient.id).length}</p>
+              <Card className="text-center p-4 border-none shadow-sm bg-blue-50/50">
+                <Briefcase className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                <p className="text-xs text-gray-500 font-bold">إجمالي المشاريع</p>
+                <p className="text-2xl font-black text-gray-800">{getClientProjects(selectedClient.id).length}</p>
               </Card>
-              <Card className="text-center p-4">
-                <FileText className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                <p className="text-xs text-gray-500">الفواتير</p>
-                <p className="text-xl font-bold">{getClientInvoices(selectedClient.id).length}</p>
+              <Card className="text-center p-4 border-none shadow-sm bg-purple-50/50">
+                <FileText className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+                <p className="text-xs text-gray-500 font-bold">الفواتير</p>
+                <p className="text-2xl font-black text-gray-800">{getClientInvoices(selectedClient.id).length}</p>
               </Card>
-              <Card className="text-center p-4">
-                <History className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
-                <p className="text-xs text-gray-500">الرصيد</p>
-                <p className="text-xl font-bold">{Number(selectedClient.currentBalance).toLocaleString()} ر.س</p>
+              <Card className="text-center p-4 border-none shadow-sm bg-emerald-50/50">
+                <History className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
+                <p className="text-xs text-gray-500 font-bold">الرصيد المالي</p>
+                <p className="text-2xl font-black text-gray-800">{Number(selectedClient.currentBalance || 0).toLocaleString()} <span className="text-sm">ر.س</span></p>
               </Card>
             </div>
 
-            <div className="border-b border-gray-100 flex gap-4 overflow-x-auto pb-px">
-              {['البيانات العامة', 'المشاريع', 'الفواتير', 'الدفعات'].map((tab) => (
-                <button key={tab} className="px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-primary-600 whitespace-nowrap">
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm">
-              <div><span className="text-gray-500 block">رقم الهاتف:</span> {selectedClient.phone || 'غير مسجل'}</div>
-              <div><span className="text-gray-500 block">البريد الإلكتروني:</span> {selectedClient.email || 'غير مسجل'}</div>
-              <div><span className="text-gray-500 block">العنوان:</span> {selectedClient.address || 'غير مسجل'}</div>
-              <div><span className="text-gray-500 block">جهة العمل:</span> {selectedClient.workPlace || 'غير مسجل'}</div>
+            <div className="bg-gray-50 p-4 rounded-xl space-y-4 border border-gray-100">
+               <h4 className="font-bold text-gray-800 border-b border-gray-200 pb-2">بيانات التواصل والملف</h4>
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div><span className="text-gray-400 block mb-1 text-xs">رقم الجوال</span><span className="font-mono">{selectedClient.mobile || selectedClient.phone || '—'}</span></div>
+                  <div><span className="text-gray-400 block mb-1 text-xs">البريد الإلكتروني</span>{selectedClient.email || '—'}</div>
+                  <div><span className="text-gray-400 block mb-1 text-xs">رقم الهوية/السجل</span><span className="font-mono">{selectedClient.idNumber || '—'}</span></div>
+                  <div><span className="text-gray-400 block mb-1 text-xs">جهة العمل</span>{selectedClient.workPlace || '—'}</div>
+                  <div className="col-span-4"><span className="text-gray-400 block mb-1 text-xs">العنوان</span>{selectedClient.address || '—'}</div>
+               </div>
             </div>
 
             <div className="flex justify-between items-center pt-4 border-t border-gray-100">
               <div className="flex gap-2">
-                <Button variant="secondary" size="sm"><Printer className="w-4 h-4" /> طباعة الملف</Button>
-                <Button variant="secondary" size="sm"><Download className="w-4 h-4" /> PDF</Button>
+                <Button variant="secondary" size="sm" className="font-bold bg-white"><Printer className="w-4 h-4 text-gray-500" /> طباعة الملف</Button>
               </div>
-              <Button variant="danger" size="sm" onClick={() => deleteItem('clients', selectedClient.id)}>حذف العميل</Button>
+              <Button onClick={() => { setShowDetailsModal(false); deleteClient(selectedClient.id); }} className="bg-red-50 hover:bg-red-100 text-red-600 font-bold border-none shadow-none" size="sm">
+                حذف العميل نهائياً
+              </Button>
             </div>
           </div>
         </Modal>

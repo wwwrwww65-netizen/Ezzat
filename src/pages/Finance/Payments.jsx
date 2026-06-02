@@ -17,8 +17,30 @@ import {
 } from 'lucide-react';
 
 export default function Payments() {
-  const { payments, clients, projects, addItem, deleteItem } = useData();
+  const [data, setData] = useState({ payments: [], clients: [], projects: [] });
   const [showAddModal, setShowAddModal] = useState(false);
+
+  React.useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    if (window.electronAPI) {
+      const [payments, clients, projects] = await Promise.all([
+        window.electronAPI.queryDb("SELECT * FROM payments ORDER BY id DESC"),
+        window.electronAPI.queryDb("SELECT * FROM clients"),
+        window.electronAPI.queryDb("SELECT * FROM projects")
+      ]);
+      setData({ payments, clients, projects });
+    }
+  };
+
+  const deleteItem = async (type, id) => {
+    if (window.electronAPI && confirm('هل أنت متأكد من الحذف؟')) {
+      await window.electronAPI.executeDb("DELETE FROM payments WHERE id = ?", [id]);
+      fetchData();
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -40,21 +62,21 @@ export default function Payments() {
 
       <Card>
         <Table headers={['رقم الدفعة', 'الجهة', 'المشروع', 'المبلغ', 'التاريخ', 'طريقة الدفع', 'الحالة', 'إجراءات']}>
-          {payments.map((pay) => (
+          {data.payments.map((pay) => (
             <tr key={pay.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4 font-bold text-gray-900">{pay.id}</td>
               <td className="px-6 py-4">
                 <div className="flex items-center gap-2">
                    <User className="w-4 h-4 text-gray-400" />
-                   <span className="text-sm font-medium">{clients.find(c => c.id === pay.entityId)?.name || 'غير معروف'}</span>
+                   <span className="text-sm font-medium">{data.clients.find(c => c.id === pay.entity_id)?.name || 'غير معروف'}</span>
                 </div>
               </td>
               <td className="px-6 py-4 text-sm text-gray-600">
-                {projects.find(p => p.id === pay.projectId)?.name || 'عام'}
+                {data.projects.find(p => p.id === pay.project_id)?.name || 'عام'}
               </td>
               <td className="px-6 py-4 font-bold text-emerald-600">{Number(pay.amount).toLocaleString()} ر.س</td>
               <td className="px-6 py-4 text-sm text-gray-500">{pay.date}</td>
-              <td className="px-6 py-4 text-sm">{pay.paymentMethod}</td>
+              <td className="px-6 py-4 text-sm">{pay.payment_method}</td>
               <td className="px-6 py-4">
                 <Badge variant={pay.status === 'مؤكد' ? 'success' : 'warning'}>{pay.status}</Badge>
               </td>
@@ -69,8 +91,8 @@ export default function Payments() {
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="تسجيل دفعة جديدة">
         <form noValidate className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Select label="الجهة (العميل/المورد)" options={clients.map(c => ({ label: c.name, value: c.id }))} />
-            <Select label="المشروع" options={projects.map(p => ({ label: p.name, value: p.id }))} />
+            <Select label="الجهة (العميل/المورد)" options={data.clients.map(c => ({ label: c.name, value: c.id }))} />
+            <Select label="المشروع" options={data.projects.map(p => ({ label: p.name, value: p.id }))} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="المبلغ" type="number" />
@@ -89,8 +111,8 @@ export default function Payments() {
           </div>
           <textarea className="w-full p-3 border border-gray-300 rounded-xl text-sm" placeholder="ملاحظات الدفعة..." rows="3"></textarea>
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="secondary" onClick={() => setShowAddModal(false)}>إلغاء</Button>
-            <Button variant="primary">تأكيد الدفعة</Button>
+            <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>إلغاء</Button>
+            <Button variant="primary" type="button" onClick={() => setShowAddModal(false)}>تأكيد الدفعة</Button>
           </div>
         </form>
       </Modal>

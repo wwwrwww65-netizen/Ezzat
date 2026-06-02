@@ -4,6 +4,7 @@ import {
   FileDown, Printer, CheckCircle, Coins, TrendingUp, X, Eye
 } from 'lucide-react';
 import { cn } from '../components/UI';
+import { useState, useEffect } from 'react';
 
 const LOW_STOCK_THRESHOLD = 10;
 
@@ -27,7 +28,17 @@ export default function Inventory() {
   const fetchInventory = async () => {
     if (window.electronAPI) {
       const rows = await window.electronAPI.queryDb(`
-        SELECT i.*, m.name as material_name, m.unit, m.cost_per_unit
+        SELECT 
+          i.*, 
+          m.name as material_name, 
+          m.unit, 
+          COALESCE(
+            (SELECT SUM(pi.total) / SUM(pi.quantity) 
+             FROM purchase_items pi 
+             JOIN purchases p ON p.id = pi.purchase_id 
+             WHERE pi.material_id = m.id AND p.delivery_status = 'received' AND pi.quantity > 0), 
+            m.cost_per_unit
+          ) as cost_per_unit
         FROM inventory_stock i
         JOIN materials_catalog m ON i.material_id = m.id
         ORDER BY i.quantity ASC

@@ -198,17 +198,9 @@ export default function PurchaseOrders() {
           'INSERT INTO purchase_items (purchase_id, material_id, quantity, unit_price, total) VALUES (?, ?, ?, ?, ?)',
           [purchaseId, item.material_id, item.quantity, item.unit_price, item.total]
         );
-        
-        // 3. Update Inventory Stock (ترصيد المخازن)
-        const checkStock = await window.electronAPI.queryDb('SELECT * FROM inventory_stock WHERE material_id = ?', [item.material_id]);
-        if (checkStock.length > 0) {
-          await window.electronAPI.executeDb('UPDATE inventory_stock SET quantity = quantity + ? WHERE material_id = ?', [item.quantity, item.material_id]);
-        } else {
-          await window.electronAPI.executeDb('INSERT INTO inventory_stock (material_id, warehouse_name, quantity) VALUES (?, ?, ?)', [item.material_id, 'المستودع الرئيسي', item.quantity]);
-        }
       }
 
-      // 4. Update Supplier Balance (المديونية) if not fully paid in cash
+      // 3. Update Supplier Balance (المديونية) if not fully paid in cash
       const addedToDebt = totalAmount - paidAmount;
       if (addedToDebt > 0) {
         await window.electronAPI.executeDb('UPDATE suppliers SET balance = balance + ? WHERE id = ?', [addedToDebt, newInvoice.supplier_id]);

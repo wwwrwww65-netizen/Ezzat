@@ -6,6 +6,11 @@ import Projects from './pages/Projects';
 import ProjectDetails from './pages/ProjectDetails';
 import Clients from './pages/Clients';
 import Employees from './pages/Employees';
+import Payroll from './pages/Payroll';
+import EmployeesHistory from './pages/EmployeesHistory';
+import StaffVouchers from './pages/StaffVouchers';
+import StaffPenalties from './pages/StaffPenalties';
+import JobRoles from './pages/JobRoles';
 import Finance from './pages/Finance';
 import Invoices from './pages/Finance/Invoices';
 import Payments from './pages/Finance/Payments';
@@ -67,6 +72,11 @@ function App() {
           <Route path="/projects/:id" element={<ProjectDetails />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/employees" element={<Employees />} />
+          <Route path="/employees/payroll" element={<Payroll />} />
+          <Route path="/employees/history" element={<EmployeesHistory />} />
+          <Route path="/employees/vouchers" element={<StaffVouchers />} />
+          <Route path="/employees/penalties" element={<StaffPenalties />} />
+          <Route path="/employees/job-roles" element={<JobRoles />} />
           <Route path="/finance" element={<Finance />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/settings" element={<Navigate to="/settings/info" />} />

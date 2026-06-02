@@ -20,22 +20,104 @@ import {
 } from 'lucide-react';
 
 export default function Invoices() {
-  const { invoices, clients, projects, addItem, deleteItem } = useData();
+  const [data, setData] = useState({ invoices: [], clients: [], projects: [] });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [formData, setFormData] = useState({
+    client_id: '',
+    project_id: '',
+    date: new Date().toISOString().split('T')[0],
+    amount: '',
+    notes: ''
+  });
 
-  const filteredInvoices = invoices.filter(inv =>
+  React.useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    if (window.electronAPI) {
+      const [invoices, clients, projects] = await Promise.all([
+        window.electronAPI.queryDb("SELECT * FROM invoices ORDER BY id DESC"),
+        window.electronAPI.queryDb("SELECT * FROM clients"),
+        window.electronAPI.queryDb("SELECT * FROM projects")
+      ]);
+      setData({ invoices, clients, projects });
+    }
+  };
+
+  const deleteItem = async (type, id) => {
+    if (window.electronAPI && confirm('هل أنت متأكد من الحذف؟')) {
+      await window.electronAPI.executeDb("DELETE FROM invoices WHERE id = ?", [id]);
+      fetchData();
+    }
+  };
+
+  const filteredInvoices = data.invoices.filter(inv =>
     (inv.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     inv.clientName?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+     inv.client_name?.toLowerCase().includes(searchTerm.toLowerCase())) &&
     (statusFilter === '' || inv.status === statusFilter)
   );
 
+  const handleAddInvoice = async (e) => {
+    e.preventDefault();
+    if (!window.electronAPI) return;
+
+    const amount = parseFloat(formData.amount) || 0;
+    const tax = amount * 0.15;
+    const total = amount + tax;
+    const id = `INV-${Date.now().toString().slice(-5)}`;
+    const client = data.clients.find(c => c.id.toString() === formData.client_id);
+    const clientName = client ? client.name : 'عام';
+
+    await window.electronAPI.executeDb(
+      "INSERT INTO invoices (id, client_id, client_name, project_id, date, amount, tax, total, paid_amount, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [id, formData.client_id || null, clientName, formData.project_id || null, formData.date, amount, tax, total, 0, 'معلقة', formData.notes]
+    );
+
+    setShowAddModal(false);
+    setFormData({
+      client_id: '',
+      project_id: '',
+      date: new Date().toISOString().split('T')[0],
+      amount: '',
+      notes: ''
+    });
+    fetchData();
+  };
+
+  const handleMarkAsPaid = async (inv) => {
+    if (!window.electronAPI) return;
+    const paymentAmount = prompt(`أدخل المبلغ المدفوع للفاتورة رقم ${inv.id}:`, inv.total - (inv.paid_amount || 0));
+    if (!paymentAmount) return;
+    
+    const amountVal = parseFloat(paymentAmount);
+    if (isNaN(amountVal) || amountVal <= 0) return;
+
+    const newPaid = (inv.paid_amount || 0) + amountVal;
+    const newStatus = newPaid >= inv.total ? 'مدفوعة' : 'معلقة';
+
+    await window.electronAPI.executeDb(
+      "UPDATE invoices SET paid_amount = ?, status = ? WHERE id = ?",
+      [newPaid, newStatus, inv.id]
+    );
+
+    // Auto record in Income
+    await window.electronAPI.executeDb(
+      "INSERT INTO income (title, method, date, amount, status) VALUES (?, ?, ?, ?, ?)",
+      [`دفعة للفاتورة ${inv.id}`, 'تحويل بنكي', new Date().toISOString().split('T')[0], amountVal, 'مؤكد']
+    );
+
+    alert('تم تسجيل الدفعة بنجاح وتحديث حالة الفاتورة!');
+    fetchData();
+  };
+
   const stats = [
-    { label: 'إجمالي المبالغ', value: invoices.reduce((acc, i) => acc + Number(i.total || 0), 0).toLocaleString() + ' ر.س', icon: TrendingUp, color: 'text-emerald-600' },
-    { label: 'فواتير غير مدفوعة', value: invoices.filter(i => i.status !== 'مدفوعة').length, icon: Clock, color: 'text-amber-600' },
-    { label: 'فواتير الشهر الحالي', value: invoices.length, icon: FileText, color: 'text-blue-600' },
-    { label: 'مبالغ متأخرة', value: invoices.filter(i => i.status === 'متأخرة').reduce((acc, i) => acc + Number(i.total || 0), 0).toLocaleString() + ' ر.س', icon: AlertCircle, color: 'text-red-600' },
+    { label: 'إجمالي المبالغ', value: data.invoices.reduce((acc, i) => acc + Number(i.total || 0), 0).toLocaleString() + ' ر.س', icon: TrendingUp, color: 'text-emerald-600' },
+    { label: 'فواتير غير مدفوعة', value: data.invoices.filter(i => i.status !== 'مدفوعة').length, icon: Clock, color: 'text-amber-600' },
+    { label: 'فواتير الشهر الحالي', value: data.invoices.length, icon: FileText, color: 'text-blue-600' },
+    { label: 'مبالغ متأخرة', value: data.invoices.filter(i => i.status === 'متأخرة').reduce((acc, i) => acc + Number(i.total || 0), 0).toLocaleString() + ' ر.س', icon: AlertCircle, color: 'text-red-600' },
   ];
 
   return (
@@ -105,7 +187,7 @@ export default function Invoices() {
               <td className="px-6 py-4">
                 <div className="flex flex-col">
                   <span className="text-sm font-bold text-gray-900">{inv.clientName}</span>
-                  <span className="text-xs text-gray-400 flex items-center gap-1"><Building2 className="w-3 h-3" /> {projects.find(p => p.id === inv.projectId)?.name || 'عام'}</span>
+                  <span className="text-xs text-gray-400 flex items-center gap-1"><Building2 className="w-3 h-3" /> {data.projects.find(p => p.id === inv.projectId)?.name || 'عام'}</span>
                 </div>
               </td>
               <td className="px-6 py-4 text-sm text-gray-500">{inv.date}</td>
@@ -118,8 +200,9 @@ export default function Invoices() {
               </td>
               <td className="px-6 py-4">
                 <div className="flex items-center gap-2">
-                  <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-4 h-4" /></button>
-                  <button className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"><Printer className="w-4 h-4" /></button>
+                  <button onClick={() => handleMarkAsPaid(inv)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold" title="إضافة دفعة">
+                    <Plus className="w-4 h-4" /> دفعة
+                  </button>
                   <button onClick={() => deleteItem('invoices', inv.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </td>
@@ -128,42 +211,66 @@ export default function Invoices() {
         </Table>
       </Card>
 
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إصدار فاتورة جديدة" className="max-w-3xl">
-        <form noValidate className="space-y-6">
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="إصدار فاتورة جديدة" className="max-w-2xl">
+        <form onSubmit={handleAddInvoice} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <Select label="العميل" options={clients.map(c => ({ label: c.name, value: c.id }))} required />
-            <Select label="المشروع المرتبط" options={projects.map(p => ({ label: p.name, value: p.id }))} />
+            <Select 
+              label="العميل" 
+              options={[{label: '— اختر العميل —', value: ''}, ...data.clients.map(c => ({ label: c.name, value: c.id }))]} 
+              value={formData.client_id}
+              onChange={(e) => setFormData({...formData, client_id: e.target.value})}
+              required 
+            />
+            <Select 
+              label="المشروع المرتبط" 
+              options={[{label: '— عام (بدون مشروع) —', value: ''}, ...data.projects.map(p => ({ label: p.name, value: p.id }))]} 
+              value={formData.project_id}
+              onChange={(e) => setFormData({...formData, project_id: e.target.value})}
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="رقم الفاتورة" defaultValue={`INV-${Date.now().toString().slice(-5)}`} />
-            <Input label="تاريخ الفاتورة" type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+            <Input 
+              label="تاريخ الفاتورة" 
+              type="date" 
+              value={formData.date}
+              onChange={(e) => setFormData({...formData, date: e.target.value})}
+              required
+            />
+            <Input 
+              label="المبلغ الأساسي (قبل الضريبة)" 
+              type="number" 
+              value={formData.amount}
+              onChange={(e) => setFormData({...formData, amount: e.target.value})}
+              required
+            />
           </div>
 
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <Table headers={['الوصف / البند', 'الكمية', 'سعر الوحدة', 'الإجمالي', '']}>
-              <tr>
-                <td className="p-2"><Input placeholder="أعمال الحفر..." /></td>
-                <td className="p-2 w-24"><Input type="number" defaultValue="1" /></td>
-                <td className="p-2 w-32"><Input type="number" placeholder="0.00" /></td>
-                <td className="p-2 w-32 font-bold text-center">0.00</td>
-                <td className="p-2 w-10 text-red-500 cursor-pointer"><Trash2 className="w-4 h-4" /></td>
-              </tr>
-            </Table>
-            <div className="p-3 bg-gray-50 flex justify-between">
-              <Button variant="ghost" size="sm" type="button"><Plus className="w-3 h-3" /> إضافة بند جديد</Button>
-              <div className="text-left space-y-1">
-                <p className="text-xs text-gray-500">المجموع: 0.00 ر.س</p>
-                <p className="text-xs text-gray-500">الضريبة (15%): 0.00 ر.س</p>
-                <p className="text-sm font-bold text-primary-600">الإجمالي: 0.00 ر.س</p>
-              </div>
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>المبلغ الأساسي:</span>
+              <span className="font-bold">{Number(formData.amount || 0).toLocaleString()} ر.س</span>
+            </div>
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>ضريبة القيمة المضافة (15%):</span>
+              <span className="font-bold">{(Number(formData.amount || 0) * 0.15).toLocaleString()} ر.س</span>
+            </div>
+            <div className="pt-2 mt-2 border-t border-gray-200 flex justify-between text-primary-700 font-black text-lg">
+              <span>الإجمالي المستحق:</span>
+              <span>{(Number(formData.amount || 0) * 1.15).toLocaleString()} ر.س</span>
             </div>
           </div>
 
-          <textarea className="w-full p-3 border border-gray-300 rounded-xl text-sm" placeholder="ملاحظات وشروط الدفع..." rows="3"></textarea>
+          <textarea 
+            className="w-full p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:outline-none" 
+            placeholder="ملاحظات وشروط الدفع..." 
+            rows="3"
+            value={formData.notes}
+            onChange={(e) => setFormData({...formData, notes: e.target.value})}
+          ></textarea>
 
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setShowAddModal(false)}>إلغاء</Button>
-            <Button variant="primary">حفظ واعتماد الفاتورة</Button>
+            <Button type="button" variant="secondary" onClick={() => setShowAddModal(false)}>إلغاء</Button>
+            <Button type="submit" variant="primary">حفظ واعتماد الفاتورة</Button>
           </div>
         </form>
       </Modal>

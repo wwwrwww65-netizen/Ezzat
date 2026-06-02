@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export default function DocumentCenter() {
-  const { employees, projectFiles, addItem, deleteItem } = useData();
+  const [projectFiles, setProjectFiles] = useState([]);
   const [currentFolder, setCurrentFolder] = useState('الكل');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid');
@@ -29,6 +29,17 @@ export default function DocumentCenter() {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileName, setFileName] = useState('');
+
+  React.useEffect(() => {
+    fetchFiles();
+  }, []);
+
+  const fetchFiles = async () => {
+    if (window.electronAPI) {
+      const files = await window.electronAPI.queryDb("SELECT * FROM documents ORDER BY id DESC");
+      setProjectFiles(files);
+    }
+  };
 
   // Mock Folders
   const folders = [
@@ -53,7 +64,6 @@ export default function DocumentCenter() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    // Handle file drag and drop
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       setFileName(file.name);
@@ -69,9 +79,9 @@ export default function DocumentCenter() {
     }
   };
 
-  const handleUploadSubmit = (e) => {
+  const handleUploadSubmit = async (e) => {
     e.preventDefault();
-    if (!fileName) return;
+    if (!fileName || !window.electronAPI) return;
 
     let fileType = 'pdf';
     if (fileName.toLowerCase().endsWith('xls') || fileName.toLowerCase().endsWith('xlsx')) fileType = 'excel';
@@ -87,14 +97,23 @@ export default function DocumentCenter() {
       uploader: 'مدير النظام'
     };
     
-    addItem('projectFiles', newFile);
+    await window.electronAPI.executeDb(
+      "INSERT INTO documents (name, type, size, date, folder, project, uploader) VALUES (?,?,?,?,?,?,?)",
+      [newFile.name, newFile.type, newFile.size, newFile.date, newFile.folder, newFile.project, newFile.uploader]
+    );
+
     setShowUploadModal(false);
     setFileName('');
     setSelectedFile(null);
+    fetchFiles();
   };
 
-  const handleDeleteFile = (id) => {
-    deleteItem('projectFiles', id);
+  const handleDeleteFile = async (id) => {
+    if (!window.electronAPI) return;
+    if (confirm('هل أنت متأكد من حذف هذا الملف؟')) {
+      await window.electronAPI.executeDb("DELETE FROM documents WHERE id = ?", [id]);
+      fetchFiles();
+    }
   };
 
   const getFileIcon = (type) => {
@@ -172,7 +191,7 @@ export default function DocumentCenter() {
         </Card>
 
         {/* Main Content Area */}
-        <Card className="flex-1 flex flex-col overflow-hidden bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm rounded-2xl">
+        <div className="flex-1 flex flex-col overflow-hidden bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm rounded-2xl">
           {/* Content Header */}
           <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-600">
@@ -278,7 +297,7 @@ export default function DocumentCenter() {
               </div>
             )}
           </div>
-        </Card>
+        </div>
       </div>
 
       {/* Upload Modal */}
